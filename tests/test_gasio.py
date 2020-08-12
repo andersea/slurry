@@ -1,4 +1,4 @@
-from naturgas import __version__
+from gasio import __version__
 
 
 def test_version():
