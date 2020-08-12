@@ -19,9 +19,4 @@ class Refiner(Producer):
     @property
     @abstractmethod
     def input(self):
-        """Get the input channel for the producer."""
-    
-    @property.setter
-    @abstractmethod
-    def input(self, val): # pylint: disable=function-redefined
-        """Sets the input channel producer."""
+        """The input source for the producer."""

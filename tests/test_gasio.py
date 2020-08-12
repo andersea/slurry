@@ -1,5 +1,8 @@
-from gasio import __version__
+import trio
+
+from gasio import create_pipeline
 
 
-def test_version():
-    assert __version__ == '0.1.0'
+async def test_create_pipeline(autojump_clock):
+    async with create_pipeline(None) as pipeline:
+        await trio.sleep(1)
