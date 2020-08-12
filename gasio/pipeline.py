@@ -1,24 +1,22 @@
 __version__ = '0.1.0'
 
-import builtins
-import math
-from typing import Sequence, Optional
+from contextlib import asynccontextmanager
+from typing import Sequence
 
 import trio
-from async_generator import aclosing, asynccontextmanager
 
 from .abc import Producer, Refiner
 from .producers import Extension
 from .tap import Tap
 
 class Pipeline:
-    def __init__(self, producer: Producer, *refiners: Sequence[Refiner]):
+    def __init__(self, producer: Producer, *refiners: Sequence[Refiner], nursery: trio.Nursery=None):
         self.producer = producer
         self.refiners = refiners
         self._taps = set()
         self._start_pump = trio.Event()
-        self._nursery: trio.Nursery = None
-        
+        self._nursery = nursery
+
     @asynccontextmanager
     async def _start(self):
         async with trio.open_nursery() as nursery:
@@ -53,25 +51,28 @@ class Pipeline:
             await tap.send_channel.aclose()
 
     def tap(self, *, max_buffer_size=0, timeout: float=1, retrys: int=3, start_pump=True) -> trio.MemoryReceiveChannel:
+        """Create a new output channel for this pipeline.
+        """
         send_channel, receive_channel = trio.open_memory_channel(max_buffer_size)
         self._taps.add(Tap(send_channel, timeout, retrys))
         if start_pump:
             self._start_pump.set()
         return receive_channel
-    
+
     def extension(self, *refiners: Sequence[Refiner]) -> "Pipeline":
+        """Extend this pipeline into a new pipeline.
+        """
         pipeline = Pipeline(
             Extension(self.tap()),
-            refiners
+            refiners,
+            nursery=self._nursery
         )
-        pipeline._nursery = self._nursery
-        pipeline._nursery.start_soon(pipeline._pump)
+        self._nursery.start_soon(pipeline._pump) # pylint: disable=protected-access
         return pipeline
 
 @asynccontextmanager
 async def create_pipeline(producer: Producer, *refiners: Sequence[Refiner]):
+    """Create a new pipeline from a producer and a sequence of refiners."""
     pipeline = Pipeline(producer, refiners)
-    async with pipeline._start(): # pylint: disable=not-async-context-manager
+    async with pipeline._start(): # pylint: disable=protected-access
         yield pipeline
-    
-    
