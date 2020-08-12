@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "gasio"
+version = "0.1.0"
+description = ""
+authors = ["Anders Ellenshøj Andersen <andersa@ellenshoej.dk>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+trio = "^0.16.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+pylint = "^2.5.3"
+bump2version = "^1.0.0"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

@@ -1,0 +1,19 @@
+language: python
+python:
+- 3.8
+- 3.7
+install: pip install -U tox-travis poetry
+script: tox
+before_deploy:
+- poetry config pypi-token.pypi $PYPI_PASSWORD
+- poetry build
+deploy:
+  provider: script
+  script: poetry publish
+  edge: true
+  on:
+    tags: true
+    python: 3.8
+env:
+  global:
+    secure: 5XIXA45DzRJgw59EsUL4iV94YCNDu2ADndmgPfjnZM60ZoqFxoej/YHUZMe54yqOPWuJ3oXTA6F0/Oya7g+ELHa2lTWCEBwrXPRY1SLMa7vLvWAHkBi74Cc6NUkmhiAgUtQcQrje4lJJLwK5HveXpGIMT86DtRfSLFKt9jiqDHrciXhYpTdPAl48eaHMvi+n0SkdM+7GbzzxVtPXrwCERSXs26iuPiRn6S+w7ftnOqnRnebeTMPurWqS92eZIztKT80qhUhq3AshpP7hJdUuzQ3xGMp2iy7tRDiHlL2aJfMof2gzq8OSLjfjhZItkzoVShGfUPb/ZuwGvVNQYR15ubWb4JQK+gfrwXW6Ad/MsM5rZobZ4wPQlE+vdDJeVXTE3kZhpLVjFYdATv6SGVByXrBV6MuB/MVWiPIlj2TIRQfidJ+GEsHtsFBX8zwj3ymy8EEQ3m5KpurkgxVuyJoQZGnyoZVDDfWknWjGG3/RVJqXI7miTDlp7SELw5i1s3RFQTXBFpSWxvieO7TU0IgYnKkQz7/lBRaZrBhXNTQ/iGru1sJRRNwfdfsop1jK2dcJHxYWVH1mutevIpKHuyQotwkj/wl4dn3z/AD1DuILn2BtsA/S0mXMjORvb1BDJEXnLP9gTgD8oGreMG2jpBvKpEA7Uf/qtWqaDCDcUb88NhY=
