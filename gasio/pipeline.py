@@ -9,22 +9,9 @@ from async_generator import aclosing, asynccontextmanager
 
 from .abc import Producer, Refiner
 from .producers import Extension
+from .tap import Tap
 
 class Pipeline:
-    class Tap:
-        def __init__(self, send_channel, timeout, retrys):
-            self.send_channel = send_channel
-            self.timeout = timeout
-            self.retrys = retrys
-
-        async def send(self, item):
-            for _ in range(self.retrys + 1):
-                with trio.move_on_after(self.timeout):
-                    await self.send_channel.send(item)
-                    return
-                await trio.sleep(0)
-            raise trio.BusyResourceError('Unable to send item.')
-
     def __init__(self, producer: Producer, *refiners: Sequence[Refiner]):
         self.producer = producer
         self.refiners = refiners
@@ -67,7 +54,7 @@ class Pipeline:
 
     def tap(self, *, max_buffer_size=0, timeout: float=1, retrys: int=3, start_pump=True) -> trio.MemoryReceiveChannel:
         send_channel, receive_channel = trio.open_memory_channel(max_buffer_size)
-        self._taps.add(Pipeline.Tap(send_channel, timeout, retrys))
+        self._taps.add(Tap(send_channel, timeout, retrys))
         if start_pump:
             self._start_pump.set()
         return receive_channel
@@ -82,8 +69,8 @@ class Pipeline:
         return pipeline
 
 @asynccontextmanager
-async def create_pipeline(producer: Producer, *refiners: Sequence[Refiner], faucet_send_timeout: float=1):
-    pipeline = Pipeline(producer, refiners, faucet_send_timeout=faucet_send_timeout)
+async def create_pipeline(producer: Producer, *refiners: Sequence[Refiner]):
+    pipeline = Pipeline(producer, refiners)
     async with pipeline._start(): # pylint: disable=not-async-context-manager
         yield pipeline
     
