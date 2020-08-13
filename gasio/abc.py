@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
+from typing import AsyncIterable, Any
 
 import trio
+
 
 class Producer(ABC):
     """Producers are the first section in a pipeline. Producers creates an output, without defining
@@ -28,13 +30,13 @@ class Refiner(Producer):
         self._input = None
     
     @property
-    def input(self) -> trio.MemoryReceiveChannel:
-        """The input source for the producer."""
+    def input(self) -> AsyncIterable[Any]:
+        """The input source for the refiner."""
         return self._input
     
     @input.setter
-    def input(self, value: trio.MemoryReceiveChannel):
-        """Set the input source for the producer."""
+    def input(self, value: AsyncIterable[Any]):
+        """Set the input source for the refiner."""
         if self._input is None:
             self._input = value
         else:

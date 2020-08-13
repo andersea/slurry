@@ -1,5 +1,6 @@
 __version__ = '0.1.0'
 
-from .pipeline import create_pipeline
-from .producers import Extension, Zip
+from .abc import Producer, Refiner
+from .pipeline import Pipeline
+from .producers import Zip
 from .refiners import Delay

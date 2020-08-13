@@ -1,4 +1,9 @@
+import math
+
 import trio
+from async_generator import aclosing
+
+from .abc import Refiner
 
 class Delay(Refiner):
     def __init__(self, interval: float):
@@ -9,12 +14,12 @@ class Delay(Refiner):
         buffer_input_channel, buffer_output_channel = trio.open_memory_channel(math.inf)
 
         async def pull_task():
-            async with self._input:
-                async for item in self._input:
+            async with buffer_input_channel, aclosing(self._input) as aiter:
+                async for item in aiter:
                     await buffer_input_channel.send((item, trio.current_time() + self.interval))
         
         async def push_task():
-            async with buffer_output_channel:
+            async with self._send_output_channel, buffer_output_channel:
                 async for item, timestamp in buffer_output_channel:
                     now = trio.current_time()
                     if timestamp > now:

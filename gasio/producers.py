@@ -7,14 +7,6 @@ from async_generator import aclosing
 
 from .abc import Producer, Refiner
 
-class Extension(Producer):
-    def __init__(self, output):
-        self._output = output
-    
-    async def run(self):
-        pass
-
-
 class Zip(Producer):
     def __init__(self, *sources: Sequence[AsyncIterable]):
         super().__init__()
