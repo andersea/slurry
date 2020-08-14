@@ -1,77 +1,75 @@
 __version__ = '0.1.0'
 
 from contextlib import asynccontextmanager
+from itertools import chain
 from typing import Sequence, AsyncIterable, Any, Union
 
 import trio
+from async_generator import aclosing
 
 from .abc import Producer, Refiner
 from .tap import Tap
 
 class Pipeline:
-    def __init__(self, producer: Union[Producer, AsyncIterable[Any]], *refiners: Sequence[Refiner], nursery: trio.Nursery=None):
+    def __init__(self, producer: Union[Producer, AsyncIterable[Any]], *refiners: Sequence[Refiner], main_nursery: trio.Nursery, main_switch: trio.Event):
         self.producer = producer
         self.refiners = refiners
         self._taps = set()
-        self._start_pump = trio.Event()
-        self._nursery = nursery
+        self._main_nursery = main_nursery
+        self._main_switch = main_switch
 
     @classmethod
     @asynccontextmanager
     async def create(cls, producer: Union[Producer, AsyncIterable[Any]], *refiners: Sequence[Refiner]):
-        pipeline = cls(producer, *refiners)
         async with trio.open_nursery() as nursery:
-            pipeline._nursery = nursery
-            pipeline._nursery.start_soon(pipeline._pump)
+            pipeline = cls(producer, *refiners, main_nursery=nursery, main_switch=trio.Event())
+            nursery.start_soon(pipeline._pump)
             yield pipeline
-            pipeline._nursery.cancel_scope.cancel()
+            nursery.cancel_scope.cancel()
 
     async def _pump(self):
-        await self._start_pump.wait()
+        await self._main_switch.wait()
 
-        # Start producer
-        if isinstance(self.producer, Producer):
-            self._nursery.start_soon(self.producer.run)
+        refiner_channels = (trio.open_memory_channel(0) for _ in self.refiners)
 
-        # Start refiners
-        for n, refiner in enumerate(self.refiners):
-            if n == 0:
-                if isinstance(self.producer, Producer):
-                    refiner.input = self.producer.output
-                else:
-                    # Assumes producer is AsyncIterable
-                    refiner.input = self.producer
-                self._nursery.start_soon(refiner.run)
+        async with trio.open_nursery() as nursery:
+
+            # Start producer
+            if isinstance(self.producer, Producer):
+                channels = chain(trio.open_memory_channel(0), *refiner_channels)
+                nursery.start_soon(self.producer.run, next(channels))
             else:
-                refiner.input = self.refiners[n-1].output
-                self._nursery.start_soon(refiner.run)
+                channels = chain((self.producer, ), *refiner_channels)
 
-        # Output to taps
-        async with self.refiners[-1].output as output_channel:
-            async for item in output_channel:
-                for tap in self._taps:
-                    self._nursery.start_soon(tap.send, item)
+            # Start refiners
+            for refiner in self.refiners:
+                nursery.start_soon(refiner.run, next(channels), next(channels))
 
-        # Cleanup
+            # Output to taps
+            async with aclosing(next(channels)) as aiter:
+                async for item in aiter:
+                    for tap in self._taps:
+                        nursery.start_soon(tap.send, item)
+
+        # There is no more output to send. Close the taps.
         for tap in self._taps:
             await tap.send_channel.aclose()
 
-    def tap(self, *, max_buffer_size=0, timeout: float=1, retrys: int=3, start_pump=True) -> trio.MemoryReceiveChannel:
-        """Create a new output channel for this pipeline.
-        """
+    def tap(self, *, max_buffer_size=0, timeout: float=1, retrys: int=3, start=True) -> trio.MemoryReceiveChannel:
+        """Create a new output channel for this pipeline."""
         send_channel, receive_channel = trio.open_memory_channel(max_buffer_size)
         self._taps.add(Tap(send_channel, timeout, retrys))
-        if start_pump:
-            self._start_pump.set()
+        if start:
+            self._main_switch.set()
         return receive_channel
 
     def extend(self, *refiners: Sequence[Refiner]) -> "Pipeline":
-        """Extend this pipeline into a new pipeline.
-        """
+        """Extend this pipeline into a new pipeline."""
         pipeline = Pipeline(
             self.tap(),
             refiners,
-            nursery=self._nursery
+            main_nursery=self._main_nursery,
+            main_switch=self._main_switch
         )
-        self._nursery.start_soon(pipeline._pump) # pylint: disable=protected-access
+        self._main_nursery.start_soon(pipeline._pump) # pylint: disable=protected-access
         return pipeline
