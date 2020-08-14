@@ -7,11 +7,11 @@ from typing import Sequence, AsyncIterable, Any, Union
 import trio
 from async_generator import aclosing
 
-from .abc import Producer, Refiner
+from .abc import Mixer, Refiner
 from .tap import Tap
 
 class Pipeline:
-    def __init__(self, producer: Union[Producer, AsyncIterable[Any]], *refiners: Sequence[Refiner], main_nursery: trio.Nursery, main_switch: trio.Event):
+    def __init__(self, producer: Union[Mixer, AsyncIterable[Any]], *refiners: Sequence[Refiner], main_nursery: trio.Nursery, main_switch: trio.Event):
         self.producer = producer
         self.refiners = refiners
         self._taps = set()
@@ -20,7 +20,7 @@ class Pipeline:
 
     @classmethod
     @asynccontextmanager
-    async def create(cls, producer: Union[Producer, AsyncIterable[Any]], *refiners: Sequence[Refiner]):
+    async def create(cls, producer: Union[Mixer, AsyncIterable[Any]], *refiners: Sequence[Refiner]):
         async with trio.open_nursery() as nursery:
             pipeline = cls(producer, *refiners, main_nursery=nursery, main_switch=trio.Event())
             nursery.start_soon(pipeline._pump)
@@ -35,7 +35,7 @@ class Pipeline:
         async with trio.open_nursery() as nursery:
 
             # Start producer
-            if isinstance(self.producer, Producer):
+            if isinstance(self.producer, Mixer):
                 channels = chain(trio.open_memory_channel(0), *refiner_channels)
                 nursery.start_soon(self.producer.run, next(channels))
             else:
