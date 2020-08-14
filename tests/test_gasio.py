@@ -1,8 +1,8 @@
 import trio
 
-from gasio import Pipeline, Delay
+from gasio import Pipeline, Delay, Zip
 
-from .fixtures import produce_increasing_integers
+from .fixtures import produce_increasing_integers, produce_alphabet
 
 async def test_pipeline_create(autojump_clock):
     async with Pipeline.create(None):
@@ -28,3 +28,13 @@ async def test_delay(autojump_clock):
         async with pipeline.tap() as aiter:
             async for item in aiter:
                 assert trio.current_time() - item == 1
+
+async def test_zip(autojump_clock):
+    async with Pipeline.create(
+        Zip(produce_increasing_integers(1), produce_alphabet(0.9))
+    ) as pipeline:
+        async with pipeline.tap() as aiter:
+            results = []
+            async for item in aiter:
+                results.append(item)
+            assert results == [(0,'a'), (1, 'b'), (2, 'c')]
