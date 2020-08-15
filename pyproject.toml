@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Slurry"
-version = "0.1.0"
+version = "0.1.1"
 description = "An async stream processing microframework"
 authors = ["Anders Ellenshøj Andersen <andersa@ellenshoej.dk>"]
 license = "MIT"
