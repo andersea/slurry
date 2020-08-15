@@ -1,6 +1,6 @@
 import trio
 
-from gasio import Pipeline, Delay, Zip
+from slurry import Pipeline, Delay, Zip
 
 from .fixtures import produce_increasing_integers, produce_alphabet
 

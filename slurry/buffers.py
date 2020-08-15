@@ -1,3 +1,4 @@
+"""Pipeline sections with age- and volume-based buffers."""
 from collections import deque
 import math
 from typing import Any, Callable, Sequence
@@ -5,9 +6,9 @@ from typing import Any, Callable, Sequence
 import trio
 from async_generator import aclosing
 
-from .abc import Refiner
+from .abc import Section
 
-class FiloBuffer(Refiner):
+class FiloBuffer(Section):
     """First in-last out sequence buffer with optional.
 
     Iterates an asynchronous sequence and puts each received item in a buffer..
@@ -22,13 +23,16 @@ class FiloBuffer(Refiner):
 
     All items remain in the buffer after they are yielded, and can be yielded again, unless they
     are removed by one of the filter conditions."""
-    def __init__(self, max_size, *, max_age=math.inf, min_size=1):
+    def __init__(self, max_size, source=None, *, max_age=math.inf, min_size=1):
         super().__init__()
+        self.source = source
         self.max_size = max_size
         self.max_age = max_age
         self.min_size = min_size
 
-    async def run(self, input, output):
+    async def pump(self, input, output):
+        if self.source is not None:
+            input = self.source
         buf = deque()
         async with aclosing(input) as aiter, output:
             async for item in aiter:
@@ -39,7 +43,7 @@ class FiloBuffer(Refiner):
                 if len(buf) >= self.min_size:
                     await output.send(tuple(i[0] for i in buf))
 
-class Group(Refiner):
+class Group(Section):
     """Groups received items by time based interval.
 
     Group awaits an item to arrive from source, adds it to a buffer and sets a timeout using
@@ -55,17 +59,20 @@ class Group(Refiner):
     The items can be reduced to a single value, by supplying a reducer function. Note, that the
     reducer function must take the entire buffer as a single argument and return a single value."""
 
-    def __init__(self, interval, *,
+    def __init__(self, interval, source=None, *,
                  max_size=math.inf,
                  mapper: Callable[[Any], Any] = None,
                  reducer: Callable[[Sequence[Any]], Any] = None):
         super().__init__()
+        self.source = source
         self.interval = interval
         self.max_size = max_size
         self.mapper = mapper
         self.reducer = reducer
 
-    async def run(self, input, output):
+    async def pump(self, input, output):
+        if self.source is not None:
+            input = self.source
         async with aclosing(input) as aiter, output:
             while True:
                 buffer = []
@@ -82,17 +89,20 @@ class Group(Refiner):
                 else:
                     await output.send(tuple(buffer))
 
-class Delay(Refiner):
+class Delay(Section):
     """Delays transmission of each item received by an interval.
 
     Received items are temporarily stored in an unbounded queue, along with a timestamp, using
     a background task. The foreground task takes items from the queue, and waits until the
     item is older than the given interval and then transmits it."""
-    def __init__(self, interval: float):
+    def __init__(self, interval: float, source=None):
         super().__init__()
+        self.source = source
         self.interval = interval
 
-    async def run(self, input, output):
+    async def pump(self, input, output):
+        if self.source is not None:
+            input = self.source
         buffer_input_channel, buffer_output_channel = trio.open_memory_channel(math.inf)
 
         async def pull_task():
@@ -109,17 +119,20 @@ class Delay(Refiner):
                         await trio.sleep(timestamp - now)
                     await output.send(item)
 
-class Throttle(Refiner):
-    """Limits data rate of a input to a certain interval.
+class RateLimit(Section):
+    """Limits data rate of an input to a certain interval.
 
     The first item received is transmitted and a timeout starts. Any other items received within
     interval time are discarded. When the interval is exceeded, the timeout resets and a new
     item can be transmitted."""
-    def __init__(self, interval):
+    def __init__(self, interval, source=None):
         super().__init__()
+        self.source = source
         self.interval = interval
 
-    async def run(self, input, output):
+    async def pump(self, input, output):
+        if self.source is not None:
+            input = self.source
         then = 0
         async with aclosing(input) as aiter, output:
             async for item in aiter:
