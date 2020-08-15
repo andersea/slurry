@@ -28,6 +28,7 @@ pytest = "^5.2"
 pylint = "^2.5.3"
 bump2version = "^1.0.0"
 pytest-trio = "^0.6.0"
+sphinx = "^3.2.1"
 
 [build-system]
 requires = ["poetry>=0.12"]
