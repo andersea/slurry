@@ -7,4 +7,4 @@
    :alt: Build Status
 
 Slurry - An async stream processing microframework
-=================================================
+==================================================
