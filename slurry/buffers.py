@@ -71,23 +71,35 @@ class Group(Section):
         self.reducer = reducer
 
     async def pump(self, input, output):
-        if self.source is not None:
-            input = self.source
-        async with aclosing(input) as aiter, output:
+        if input is None:
+            if self.source is not None:
+                input = self.source
+            else:
+                raise RuntimeError('No input provided.')
+        async with output, aclosing(input) as aiter:
             while True:
                 buffer = []
-                buffer.append(await aiter.__anext__())
-                with trio.move_on_after(self.interval):
-                    while True:
-                        if len(buffer) == self.max_size:
-                            break
-                        buffer.append(await aiter.__anext__())
-                if self.mapper is not None:
-                    buffer = (self.mapper(x) for x in buffer)
-                if self.reducer is not None:
-                    await output.send(self.reducer(buffer))
+                try:
+                    buffer.append(await aiter.__anext__())
+                    with trio.move_on_after(self.interval):
+                        while True:
+                            if len(buffer) == self.max_size:
+                                break
+                            buffer.append(await aiter.__anext__())
+                except StopAsyncIteration:
+                    if buffer:
+                        await output.send(self._process_result(buffer))
+                    break
                 else:
-                    await output.send(tuple(buffer))
+                    await output.send(self._process_result(buffer))
+
+    def _process_result(self, buffer):
+        if self.mapper is not None:
+            buffer = (self.mapper(x) for x in buffer)
+        if self.reducer is not None:
+            return self.reducer(buffer)
+        else:
+            return tuple(buffer)
 
 class Delay(Section):
     """Delays transmission of each item received by an interval.

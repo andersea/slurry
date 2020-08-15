@@ -36,10 +36,11 @@ class Chain(Section):
                 sources = (*self.sources, input)
         else:
             sources = self.sources
-        for source in sources:
-            async with aclosing(source) as agen:
-                async for item in agen:
-                    await output.send(item)
+        async with output:
+            for source in sources:
+                async with aclosing(source) as agen:
+                    async for item in agen:
+                        await output.send(item)
 
 class Merge(Section):
     """Merges asynchronous sequences.
@@ -62,15 +63,15 @@ class Merge(Section):
             sources = (input, *self.sources)
         else:
             sources = self.sources
-        async with trio.open_nursery() as nursery:
+        async with output, trio.open_nursery() as nursery:
 
-            async def pull_task(source):
-                async with output.clone() as send_channel, aclosing(source) as aiter:
+            async def pull_task(source, output):
+                async with output, aclosing(source) as aiter:
                     async for item in aiter:
-                        await send_channel.send(item)
+                        await output.send(item)
 
             for source in sources:
-                nursery.start_soon(pull_task, source)
+                nursery.start_soon(pull_task, source, output.clone())
 
 class Zip(Section):
     """Zip asynchronous sequences.
@@ -98,24 +99,21 @@ class Zip(Section):
                 sources = (*self.sources, input)
         else:
             sources = self.sources
-        async with trio.open_nursery() as nursery:
-            pull_controls = [trio.open_memory_channel(0) for _ in sources]
-            results = [trio.open_memory_channel(0) for _ in sources]
 
-            async def pull_task(source, result, pull_control):
-                async with aclosing(source) as agen:
-                    async for item in agen:
-                        await result.send(item)
-                        await pull_control.receive()
-                nursery.cancel_scope.cancel()
+        async with output:
+            with trio.CancelScope() as cancel_scope:
+                async def pull_task(source, results, index):
+                    try:
+                        results[index] = await source.__anext__()
+                    except StopAsyncIteration:
+                        cancel_scope.cancel()
 
-            for i, source in builtins.enumerate(sources):
-                nursery.start_soon(pull_task, source, results[i][0], pull_controls[i][1])
-            async with output:
                 while True:
-                    await output.send(tuple([await r.receive() for _, r in results]))
-                    for pull_send_channel, _ in pull_controls:
-                        await pull_send_channel.send(None)
+                    results = [None for _ in sources]
+                    async with trio.open_nursery() as nursery:
+                        for i, source in builtins.enumerate(sources):
+                            nursery.start_soon(pull_task, source, results, i)
+                    await output.send(tuple(results))
 
 class ZipLatest(Section):
     """Zips asynchronous sequences and yields a result for on every received item.
@@ -178,32 +176,24 @@ class ZipLatest(Section):
                 elif self.place_input == 'last':
                     sources = (*sources, input)
 
-        async with trio.open_nursery() as nursery:
+        results = [self.default for _ in itertools.chain(sources, monitor)]
+        ready = [False for _ in results]
 
-            results = [self.default for _ in itertools.chain(sources, monitor)]
-            ready = [False for _ in results]
-            send_notify, receive_notify = trio.open_memory_channel(0)
+        async with output, trio.open_nursery() as nursery:
 
             async def pull_task(index, source, monitor=False):
-                async with aclosing(source) as agen:
-                    async for item in agen:
+                async with aclosing(source) as aiter:
+                    async for item in aiter:
                         results[index] = item
                         ready[index] = True
-                        if not monitor:
-                            await send_notify.send(None)
+                        if not monitor and (self.partial or False not in ready):
+                            await output.send(tuple(results))
                 nursery.cancel_scope.cancel()
 
             for i, source in builtins.enumerate(sources):
                 nursery.start_soon(pull_task, i, source)
             for i, source in builtins.enumerate(monitor):
                 nursery.start_soon(pull_task, i + len(sources), source, True)
-
-            if not self.partial:
-                while False in ready:
-                    await receive_notify.receive()
-                await output.send(tuple(results))
-            async for _ in receive_notify:
-                await output.send(tuple(results))
 
 def _validate_place_input(place_input):
     if isinstance(place_input, str):
