@@ -34,3 +34,7 @@ of memory channels. It can be thought of as an asynchronous version of itertools
 
 Included in the basic library are a number of basic stream processing building blocks, like
 ``Map``, ``Chain``, ``Merge`` and ``Zip``, and it is easy to build your own!
+
+.. _Slurry: https://github.com/andersea/slurry
+.. _Trio: https://github.com/python-trio/trio
+.. _itertools: https://docs.python.org/3/library/itertools.html

@@ -35,7 +35,7 @@ of memory channels. It can be thought of as an asynchronous version of itertools
 Included in the basic library are a number of basic stream processing building blocks, like
 ``Map``, ``Chain``, ``Merge`` and ``Zip``, and it is easy to build your own!
 
-.. include: ./docs/introduction.txt
+.. include: docs/introduction.txt
 
 Demonstration
 -------------
@@ -80,9 +80,6 @@ Still here? Wanna try it out yourself? Install from PyPI_::
 Slurry is tested on Python 3.6 or greater. For now, Slurry is Trio only. AnyIO_ support is not
 ruled out in the future.
 
-.. _Slurry: https://github.com/andersea/slurry
-.. _Trio: https://github.com/python-trio/trio
-.. _itertools: https://docs.python.org/3/library/itertools.html
 .. _PyPI: https://pypi.org/
 .. _readthedocs: https://slurry.readthedocs.io/
 .. _`source code`: https://github.com/andersea/slurry
