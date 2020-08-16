@@ -14,13 +14,14 @@ classifiers = [
     "Natural Language :: English",
     "Framework :: Trio",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
 ]
 
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.6"
 trio = "^0.16.0"
 
 [tool.poetry.dev-dependencies]
