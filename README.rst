@@ -35,6 +35,8 @@ of memory channels. It can be thought of as an asynchronous version of itertools
 Included in the basic library are a number of basic stream processing building blocks, like
 ``Map``, ``Chain``, ``Merge`` and ``Zip``, and it is easy to build your own!
 
+.. include: ./docs/introduction.txt
+
 Demonstration
 -------------
 Enough talk! Time to see what's up!
