@@ -1,3 +1,7 @@
+.. image:: https://readthedocs.org/projects/slurry/badge/?version=latest
+   :target: https://slurry.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
 .. image:: https://img.shields.io/pypi/v/slurry.svg
    :target: https://pypi.org/project/slurry
    :alt: Latest PyPi version
