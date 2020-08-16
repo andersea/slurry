@@ -1,12 +1,11 @@
 """Main Pipeline class"""
 __version__ = '0.1.0'
 
-from contextlib import asynccontextmanager
 from itertools import chain
 from typing import Sequence
 
 import trio
-from async_generator import aclosing
+from async_generator import aclosing, asynccontextmanager
 
 from .abc import Section
 from .tap import Tap
