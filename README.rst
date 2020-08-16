@@ -30,14 +30,14 @@ The basic building blocks of Slurry, includes:
 - **Extensions** - A way to add more processing steps to an existing pipeline.
 
 Slurry avoids using asynchronous generator functions, in favor of the pull-push programming style
-of memory channels. It can be seen as an asynchronous version of itertools_ on steroids.
+of memory channels. It can be thought of as an asynchronous version of itertools_ - on steroids!
 
 Included in the basic library are a number of basic stream processing building blocks, like
 ``Map``, ``Chain``, ``Merge`` and ``Zip``, and it is easy to build your own!
 
 Demonstration
 -------------
-Enough talk. Time to see what's up!
+Enough talk! Time to see what's up!
 
 .. code-block:: python
 
@@ -75,8 +75,8 @@ Still here? Wanna try it out yourself? Install from PyPI_::
 
    pip install slurry
 
-Slurry is tested on Python 3.7 or greater. It may work on Python 3.6, but no guarantees. 
-For now, Slurry is Trio only. AnyIO_ support is planned.
+Slurry is tested on Python 3.6 or greater. For now, Slurry is Trio only. AnyIO_ support is not
+ruled out in the future.
 
 .. _Slurry: https://github.com/andersea/slurry
 .. _Trio: https://github.com/python-trio/trio
