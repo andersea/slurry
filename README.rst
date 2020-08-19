@@ -14,15 +14,15 @@ Slurry
    :target: https://travis-ci.com/andersea/slurry
    :alt: Build Status
 
-An async stream processing microframework
+An async stream processing microframework for Python
 
 Introduction
 ------------
 
-Slurry_ builds on the concept of memory channels and structured concurrency, originating in
-Trio_, to create a microframework for processing streaming data.
+Slurry_ builds on the concepts of structured concurrency and memory channels, originating in
+Trio_, and uses them to create a microframework for processing streaming data.
 
-The basic building blocks of Slurry, includes:
+The basic building blocks of Slurry includes:
 
 - **Pipelines** - An asynchronous context manager which encapsulates a stream process.
 - **Sections** - The individual processing steps.
