@@ -1,5 +1,9 @@
 # History
 
+## v0.3.1
+
+* Documentation fixes.
+
 ## v0.3.0
 
 * Full API documentation added.
