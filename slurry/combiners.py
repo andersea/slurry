@@ -1,7 +1,7 @@
 """Pipeline sections for combining multiple inputs into a single output."""
 import builtins
 import itertools
-from typing import Sequence, AsyncIterable
+from typing import Any, AsyncIterable, Sequence
 
 import trio
 from async_generator import aclosing
@@ -16,14 +16,17 @@ class Chain(Section):
 
     Chain can be placed as a middle section and will chain the input of the previous section.
 
-    Note:
-        By default, the input is added as the first sources. If the input is added last instead
+    .. Note::
+        By default, the input is added as the first source. If the input is added last instead
         of first, it will cause backpressure to be applied upstream.
 
-    Args:
-        *sources (AsyncIterable[Any]): One or more async iterables that will be chained together.
-        place_input (string): Options: 'first' (default)|'last'. """
-    def __init__(self, *sources, place_input='first'):
+    :param sources: One or more async iterables that will be chained together.
+    :type sources: Sequence[AsyncIterable[Any]]
+    :param place_input: Iteration priority of the pipeline input source. Options:
+        ``'first'`` (default) \| ``'last'``.
+    :type place_input: string
+    """
+    def __init__(self, *sources: Sequence[AsyncIterable[Any]], place_input='first'):
         super().__init__()
         self.sources = sources
         self.place_input = _validate_place_input(place_input)
@@ -50,11 +53,10 @@ class Merge(Section):
 
     If Merge is used as a middle section, the input will be added to the sources.
 
-    Args:
-        *sources (AsyncIterable[Any]): One or more async iterables that will be
-            merged together.
+    :param sources: One or more async iterables who's contents will be merged.
+    :type sources: Sequence[AsyncIterable[Any]]
     """
-    def __init__(self, *sources):
+    def __init__(self, *sources: Sequence[AsyncIterable[Any]]):
         super().__init__()
         self.sources = sources
 
@@ -81,12 +83,17 @@ class Zip(Section):
 
     Zip can be used as a middle section, and the pipeline input will be added to the sources.
 
-    Args:
-        *sources (AsyncIterable[Any]): One or more async iterables that will be
-            merged together.
-        place_input (string):  Options: 'first' (default)|'last'.
+    .. Note::
+        If sources are out of sync, the fastest source will have to wait for the slowest, which
+        will cause backpressure.
+
+    :param sources:  One or more async iterables, who's contents will be zipped.
+    :type sources: Sequence[AsyncIterable[Any]]
+    :param place_input:  Position of the pipeline input source in the output tuple. Options:
+        ``'first'`` (default) \| ``'last'``.
+    :type place_input: string
     """
-    def __init__(self, *sources: Sequence[AsyncIterable], place_input='first'):
+    def __init__(self, *sources: Sequence[AsyncIterable[Any]], place_input='first'):
         super().__init__()
         self.sources = sources
         self.place_input = _validate_place_input(place_input)
@@ -116,33 +123,41 @@ class Zip(Section):
                     await output.send(tuple(results))
 
 class ZipLatest(Section):
-    """Zips asynchronous sequences and yields a result for on every received item.
+    """Zips asynchronous sequences and outputs a result on every received item.
 
-    Sources are iterated in parallel and a tuple is yielded each time a result is ready
+    Sources are iterated in parallel and a tuple is output each time a result is ready
     on any source. The tuple values will be the last received value from each source.
 
-    If any single source is exchausted, all remaining sources will be forcibly closed, and
-    the generator will exit.
-
-    Using monitor argument, one or more asynchronous sequences can be added, that will not trigger
-    an output by themselves. Their latest value will be stored and added to the output value
-    but will only be output if a new item arrives at one of the main sources.
+    Using the monitor argument, one or more asynchronous sequences can be added with the property
+    that they will not trigger an output by themselves. Their latest value will be stored and
+    added to the output value, but will only be output if a new item arrives at one of the main
+    sources.
 
     ZipLatest can be used as a middle section, in which case the upstream pipeline is
     added as an input.
 
-    Args:
-        *sources (AsyncIterable[Any]): One or more async iterables that will be
-        zipped together.
-        partial (bool): If True (default) output will be sent as soon as the first input arrives.
-        default (Any): If partial is True, this is used as the default value when no input has
-            arrived.
-        monitor (Union[AsyncIterable[Any], Sequence[AsyncIterable[Any]]]): Asynchronous sequences to
-            monitor.
-        place_input (string): Options: 'first' (default)|'last'
-        monitor_input (bool): Input is used as a monitored stream instead of a main source.
+    .. Note::
+        If any single source is exchausted, all remaining sources will be forcibly closed, and
+        the pipeline will stop.
+
+    :param sources: One or more async iterables that will be zipped together.
+    :type sources: Sequence[AsyncIterable[Any]]
+    :param partial: If ``True`` (default) output will be sent as soon as the first input arrives.
+        Otherwise, all main sources must send at least one item, before an output is generated.
+    :type partial: bool
+    :param default: If the parameter ``partial`` is ``True``, this value is used as the
+        default value to output, until an input has arrived on a source. Defaults to ``None``.
+    :type default: Any
+    :param monitor: Additional asynchronous sequences to monitor.
+    :type monitor: Optional[Union[AsyncIterable[Any], Sequence[AsyncIterable[Any]]]]
+    :param place_input: Position of the pipeline input source in the output tuple. Options:
+        ``'first'`` (default)|``'last'``
+    :type place_input: string
+    :param monitor_input: Input is used as a monitored stream instead of a main source.
+        Defaults to ``False``
+    :type monitor_input: bool
     """
-    def __init__(self, *sources,
+    def __init__(self, *sources: Sequence[AsyncIterable[Any]],
                  partial=True,
                  default=None,
                  monitor=(),

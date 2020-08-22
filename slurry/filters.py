@@ -1,18 +1,21 @@
 """Pipeline sections that filter the incoming items."""
+from typing import Any, AsyncIterable, Optional
+
 from async_generator import aclosing
 
 from .abc import Section
 
 class Skip(Section):
-    """Skips the first count items in an asynchronous sequence.
+    """Skips the first ``count`` items in an asynchronous sequence.
 
     Skip can be used as a starting section if a source is given.
 
-    Args:
-        count (int): Number of items to skip
-        source (AsyncIterable[Any]): Input source if starting section.
+    :param count: Number of items to skip
+    :type count: int
+    :param source: Input source if starting section.
+    :type source: Optional[AsyncIterable[Any]]
     """
-    def __init__(self, count: int, source: None):
+    def __init__(self, count: int, source: Optional[AsyncIterable[Any]] = None):
         super().__init__()
         self.count = count
         self.source = source
@@ -30,18 +33,19 @@ class Skip(Section):
                 await output.send(item)
 
 class Filter(Section):
-    """Outputs items that match a filter.
+    """Outputs items that passes a filter function.
 
     The filter function must take an item. If the return value evaluates as true, the item is sent,
     otherwise the item is discarded.
 
     Filter can be used as a starting section, if a source is provided.
 
-    Args:
-        func (Callable[[Any], bool]): Matching function.
-        source (AsyncIterable[Any]): Source if used as a starting section.
+    :param func: Matching function.
+    :type func: Callable[[Any], bool]
+    :param source: Source if used as a starting section.
+    :type source: Optional[AsyncIterable[Any]]
     """
-    def __init__(self, func, source=None):
+    def __init__(self, func, source: Optional[AsyncIterable[Any]] = None):
         super().__init__()
         self.func = func
         self.source = source
@@ -61,19 +65,20 @@ class Filter(Section):
 class Changes(Section):
     """Outputs items that are different from the last item output.
 
-    The generator stores a reference to the last output item. Whenever a new item arrives, it is
-    compared to the previously output item. If they are equal, the new item is discarded. If not,
+    The generator stores a reference to the last outputted item. Whenever a new item arrives, it is
+    compared to the last outputted item. If they are equal, the new item is discarded. If not,
     the new item is output and becomes the new reference. The first item received is always
-    outputted.
+    output.
 
     Changes can be used as a starting section, if a source is provided.
 
-    Note: Items are compared using the != operator.
+    .. Note::
+        Items are compared using the != operator.
 
-    Args:
-        source (AsyncIterable[Any]): Source if used as a starting section.
+    :param source: Source if used as a starting section.
+    :type source: Optional[AsyncIterable[Any]]
     """
-    def __init__(self, source=None):
+    def __init__(self, source: Optional[AsyncIterable[Any]] = None):
         super().__init__()
         self.source = source
 

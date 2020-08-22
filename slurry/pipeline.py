@@ -1,9 +1,18 @@
-"""Main Pipeline class"""
+"""The :class:`Pipeline` class is a composable a stream processor. It consists of a chain of
+:class:`slurry.abc.Section`, which each handle a single stream processing operation.
+
+The stream processing results are accessed by calling :meth:`Pipeline.tap` to create an
+output channel. Each pipeline can have multiple open taps, each receiving a copy of the
+output stream.
+
+The pipeline can also be extended dynamically with new pipeline sections with
+:meth:`Pipeline.extend`, adding additional processing.
+"""
 __version__ = '0.1.0'
 
 from itertools import chain
 import math
-from typing import Sequence
+from typing import AsyncContextManager, Sequence
 
 import trio
 from async_generator import aclosing, asynccontextmanager
@@ -12,23 +21,11 @@ from .abc import Section
 from .tap import Tap
 
 class Pipeline:
-    """The ``Pipeline`` is a composable a stream processor. It consists of a chain of
-    ``Sections``, which each handle a single stream processing operation.
+    """The main Slurry ``Pipeline`` class.
 
-    The stream processing results are accessed by calling tap to create an output channel.
-    Each pipeline can have multiple open tabs, each receiving a copy of the output stream.
-    
-    The pipeline can also be extended dynamically with new pipeline sections adding
-    additional processing.
-
-    Note:
-        Do not instantiate a ``Pipeline`` manually. Use ``Pipeline.create`` instead. It
-        returns an async context manager which manages the pipeline lifetime.
-
-    Args:
-        *sections (Sequence[Section]): One or more pipeline sections.
-        main_nursery (trio.Nursery): Nursery used to run data pumping tasks.
-        main_switch (trio.Event): Event to control pipeline start.
+    .. note::
+        Do not instantiate a ``Pipeline`` class manually. Use :meth:`create`
+        instead. It returns an async context manager which manages the pipeline lifetime.
     """
     def __init__(self, *sections: Sequence[Section],
                  main_nursery: trio.Nursery,
@@ -40,11 +37,13 @@ class Pipeline:
 
     @classmethod
     @asynccontextmanager
-    async def create(cls, *sections: Sequence[Section]):
+    async def create(cls, *sections: Sequence[Section]) -> AsyncContextManager["Pipeline"]:
         """Creates a new pipeline context and adds the given section sequence to it.
 
-        Args:
-            *sections (Sequence[Section]): One or more pipeline sections.
+        :param sections: One or more pipeline sections.
+            It is valid to supply an async iterable instead of a :class:`Section` as *first*
+            section.
+        :type sections: Sequence[slurry.abc.Section]
         """
         async with trio.open_nursery() as nursery:
             pipeline = cls(*sections, main_nursery=nursery, main_switch=trio.Event())
@@ -86,25 +85,29 @@ class Pipeline:
             timeout: float = math.inf,
             retrys: int = 0,
             start: bool = True) -> trio.MemoryReceiveChannel:
+        # pylint: disable=line-too-long
         """Create a new output channel for this pipeline.
 
         Multiple channels can be opened and will receive a copy of the output data.
 
-        Note:
-            The output is sent by reference, so if a consumer changes it, other consumers
-            will see the changed output.
+        .. note::
+            The output is sent by reference, so if the output is a mutable type and
+            a consumer changes it, other consumers will see the changed output.
 
-        Args:
-            max_buffer_size (int): Although not recommended in general, it is possible to
-                set a buffer on the output channel. (default ``0``)
-            timeout (float): Timeout in seconds when attempting to send an item.
-                (default ``math.inf``)
-            retrys (int): Number of times to retry sending, if the initial attempt fails.
-                (default ``0``)
-            start (bool): Start processesing when opening this tap. (default ``True``)
+        :param max_buffer_size: Although not recommended in general, it is possible to
+            set a buffer on the output channel. (default ``0``) See
+            `Buffering in channels <https://trio.readthedocs.io/en/stable/reference-core.html#buffering-in-channels>`_
+            for further advice.
+        :type max_buffer_size: int
+        :param timeout: Timeout in seconds when attempting to send an item. (default ``math.inf``)
+        :type timeout: float
+        :param retrys: Number of times to retry sending, if the initial attempt fails.
+            (default ``0``)
+        :type retrys: int
+        :param start: Start processesing when opening this tap. (default ``True``)
+        :type start: bool
 
-        Returns:
-            trio.MemoryReceiveChannel
+        :return: A trio ``MemoryReceiveChannel`` from which pipeline output can be pulled.
         """
         send_channel, receive_channel = trio.open_memory_channel(max_buffer_size)
         self._taps.add(Tap(send_channel, timeout, retrys))
@@ -112,17 +115,16 @@ class Pipeline:
             self._main_switch.set()
         return receive_channel
 
-    def extend(self, *sections: Sequence[Section]) -> "Pipeline":
+    def extend(self, *sections: Sequence[Section], start: bool = False) -> "Pipeline":
         """Extend this pipeline into a new pipeline.
 
-        Note:
-            Extending a pipeline implicitly enables it.
-
-        Args:
-            *sections (Sequence[Section]): One or more pipeline sections.
+        :param sections: One or more pipeline sections.
+        :type sections: Sequence[Section]
+        :param start: Start processing when adding this extension. (default: ``False``)
+        :type start: bool
         """
         pipeline = Pipeline(
-            self.tap(),
+            self.tap(start=start),
             sections,
             main_nursery=self._main_nursery,
             main_switch=self._main_switch

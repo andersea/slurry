@@ -1,12 +1,12 @@
 import trio
 
-from slurry import Pipeline, FiloBuffer, Group, Delay
+from slurry import Pipeline, Window, Group, Delay
 
 from .fixtures import produce_increasing_integers
 
-async def test_filo_buffer(autojump_clock):
+async def test_window(autojump_clock):
     async with Pipeline.create(
-        FiloBuffer(3, produce_increasing_integers(1, max=5))
+        Window(3, produce_increasing_integers(1, max=5))
     ) as pipeline, pipeline.tap() as aiter:
         result = []
         async for i in aiter:

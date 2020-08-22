@@ -1,4 +1,6 @@
 """Sections for transforming an input into a different output."""
+from typing import Any, AsyncIterable, Optional
+
 from async_generator import aclosing
 
 from .abc import Section
@@ -8,11 +10,12 @@ class Map(Section):
 
     Map can be used as a starting section, if a source is provided.
 
-    Args:
-        func (Callable[[Any], Any]): Mapping function.
-        source (AsyncIterable[Any]): Source if used as a starting section.
+    :param func: Mapping function.
+    :type func: Callable[[Any], Any]
+    :param source: Source if used as a starting section.
+    :type source: Optional[AsyncIterable[Any]]
     """
-    def __init__(self, func, source=None):
+    def __init__(self, func, source: Optional[AsyncIterable[Any]] = None):
         super().__init__()
         self.func = func
         self.source = source
