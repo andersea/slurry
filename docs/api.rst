@@ -5,6 +5,7 @@ API
 Pipeline
 --------
 .. automodule:: slurry.pipeline
+
 Pipeline
 ^^^^^^^^
 .. autoclass:: Pipeline
@@ -13,6 +14,7 @@ Pipeline
 Abc
 ---
 .. automodule:: slurry.abc
+
 Section
 ^^^^^^^
 .. autoclass:: Section
@@ -21,6 +23,7 @@ Section
 Buffers
 -------
 .. automodule:: slurry.buffers
+
 Window
 ^^^^^^
 .. autoclass:: Window
@@ -34,13 +37,14 @@ Delay
 .. autoclass:: Delay
 
 RateLimit
-^^^^^
+^^^^^^^^^
 .. autoclass:: RateLimit
 
 
 Combiners
 ---------
 .. automodule:: slurry.combiners
+
 Chain
 ^^^^^
 .. autoclass:: Chain
@@ -57,11 +61,10 @@ ZipLatest
 ^^^^^^^^^
 .. autoclass:: ZipLatest
 
-
-
 Filters
 -------
 .. automodule:: slurry.filters
+
 Skip
 ^^^^
 .. autoclass:: Skip
@@ -78,6 +81,7 @@ Changes
 Producers
 ---------
 .. automodule:: slurry.producers
+
 Repeat
 ^^^^^^
 .. autoclass:: Repeat
@@ -86,6 +90,7 @@ Repeat
 Refiners
 --------
 .. automodule:: slurry.refiners
+
 Map
 ^^^
 .. autoclass:: Map
