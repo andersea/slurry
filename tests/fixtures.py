@@ -2,7 +2,8 @@ import string
 
 import trio
 
-async def produce_increasing_integers(interval, *, max=3):
+async def produce_increasing_integers(interval, *, max=3, delay=0):
+    await trio.sleep(delay)
     for i in range(max):
         yield i
         if i == max-1:

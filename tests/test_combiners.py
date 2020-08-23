@@ -1,5 +1,6 @@
 from slurry import Pipeline
 from slurry.combiners import Chain, Merge, Zip, ZipLatest
+from slurry.producers import Repeat
 
 from .fixtures import produce_increasing_integers, produce_alphabet
 
@@ -13,13 +14,24 @@ async def test_chain(autojump_clock):
         assert result == [0, 1, 2, 'a', 'b', 'c']
 
 async def test_merge(autojump_clock):
+    result = []
     async with Pipeline.create(
         Merge(produce_increasing_integers(1, max=3), produce_alphabet(1, max=3, delay=0.1))
     ) as pipeline, pipeline.tap() as aiter:
-        result = []
         async for i in aiter:
             result.append(i)
-        assert result == [0, 'a', 1, 'b', 2, 'c']
+    assert result == [0, 'a', 1, 'b', 2, 'c']
+
+async def test_merge_section(autojump_clock):
+    result = []
+    async with Pipeline.create(
+        Merge(produce_increasing_integers(1, max=3, delay=0.5), Repeat(1, default='a'))
+    ) as pipeline, pipeline.tap() as aiter:
+        async for i in aiter:
+            result.append(i)
+            if len(result) == 6:
+                break
+    assert result == ['a', 0, 'a', 1, 'a', 2]
 
 
 async def test_zip(autojump_clock):
