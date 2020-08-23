@@ -26,14 +26,20 @@ class Pipeline:
     .. note::
         Do not instantiate a ``Pipeline`` class manually. Use :meth:`create`
         instead. It returns an async context manager which manages the pipeline lifetime.
+
+    Fields:
+
+    * ``sections``: The ``Sequence`` of pipeline sections contained in the pipeline.
+    * ``nursery``: The :class:`trio.Nursery` that is executing the pipeline.
+
     """
     def __init__(self, *sections: Sequence[Section],
-                 main_nursery: trio.Nursery,
-                 main_switch: trio.Event):
+                 nursery: trio.Nursery,
+                 enabled: trio.Event):
         self.sections = sections
+        self.nursery = nursery
+        self._enabled = enabled
         self._taps = set()
-        self._main_nursery = main_nursery
-        self._main_switch = main_switch
 
     @classmethod
     @asynccontextmanager
@@ -46,14 +52,14 @@ class Pipeline:
         :type sections: Sequence[slurry.abc.Section]
         """
         async with trio.open_nursery() as nursery:
-            pipeline = cls(*sections, main_nursery=nursery, main_switch=trio.Event())
+            pipeline = cls(*sections, nursery=nursery, enabled=trio.Event())
             nursery.start_soon(pipeline._pump) # pylint: disable=protected-access
             yield pipeline
             nursery.cancel_scope.cancel()
 
     async def _pump(self):
         """Runs the pipeline."""
-        await self._main_switch.wait()
+        await self._enabled.wait()
 
         if isinstance(self.sections[0], Section):
             first_input = None
@@ -112,7 +118,7 @@ class Pipeline:
         send_channel, receive_channel = trio.open_memory_channel(max_buffer_size)
         self._taps.add(Tap(send_channel, timeout, retrys))
         if start:
-            self._main_switch.set()
+            self._enabled.set()
         return receive_channel
 
     def extend(self, *sections: Sequence[Section], start: bool = False) -> "Pipeline":
@@ -126,8 +132,8 @@ class Pipeline:
         pipeline = Pipeline(
             self.tap(start=start),
             sections,
-            main_nursery=self._main_nursery,
-            main_switch=self._main_switch
+            nursery=self.nursery,
+            enabled=self._enabled
         )
-        self._main_nursery.start_soon(pipeline._pump) # pylint: disable=protected-access
+        self.nursery.start_soon(pipeline._pump) # pylint: disable=protected-access
         return pipeline
