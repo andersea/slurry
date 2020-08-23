@@ -1,7 +1,7 @@
 """Pipeline sections for combining multiple inputs into a single output."""
 import builtins
 import itertools
-from typing import Any, AsyncIterable, Sequence
+from typing import Any, AsyncIterable, Sequence, Union
 
 import trio
 from async_generator import aclosing
@@ -46,17 +46,20 @@ class Chain(Section):
                         await output.send(item)
 
 class Merge(Section):
-    """Merges asynchronous sequences.
+    """Merges asynchronous sequences or pipeline sections.
 
-    Sources are iterated in parallel and items are send from each source, as soon as they become
-    available.
+    Sources are iterated in parallel and items are send from each source, as soon as
+    they become available.
 
     If Merge is used as a middle section, the input will be added to the sources.
 
-    :param sources: One or more async iterables who's contents will be merged.
-    :type sources: Sequence[AsyncIterable[Any]]
+    Sources can be pipeline sections, which will be treated as first sections, with
+    no input. Merge will take care of running the pump task for these sections.
+
+    :param sources: One or more async iterables or sections who's contents will be merged.
+    :type sources: Sequence[Union[AsyncIterable[Any], Section]]
     """
-    def __init__(self, *sources: Sequence[AsyncIterable[Any]]):
+    def __init__(self, *sources: Sequence[Union[AsyncIterable[Any], Section]]):
         super().__init__()
         self.sources = sources
 
@@ -68,6 +71,10 @@ class Merge(Section):
         async with output, trio.open_nursery() as nursery:
 
             async def pull_task(source, output):
+                if isinstance(source, Section):
+                    send_channel, receive_channel = trio.open_memory_channel(0)
+                    nursery.start_soon(source.pump, None, send_channel)
+                    source = receive_channel
                 async with output, aclosing(source) as aiter:
                     async for item in aiter:
                         await output.send(item)
