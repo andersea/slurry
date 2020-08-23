@@ -1,5 +1,9 @@
 # History
 
+## v0.4.0
+
+* Merge section can now merge other Sections in addition to regular async iterables.
+
 ## v0.3.1
 
 * Documentation fixes.
