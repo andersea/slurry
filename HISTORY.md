@@ -1,5 +1,9 @@
 # History
 
+## v0.4.1
+
+* Expose pipeline nursery to end users.
+
 ## v0.4.0
 
 * Merge section can now merge other Sections in addition to regular async iterables.
