@@ -1,5 +1,9 @@
 # History
 
+## v0.4.3
+
+* Upgrade to trio 0.17
+
 ## v0.4.2
 
 * Expose pipeline nursery to end users.
