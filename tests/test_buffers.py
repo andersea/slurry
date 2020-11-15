@@ -2,7 +2,7 @@ import trio
 
 from slurry import Pipeline, Window, Group, Delay
 
-from .fixtures import produce_increasing_integers
+from .fixtures import produce_increasing_integers, spam_wait_spam_integers
 
 async def test_window(autojump_clock):
     async with Pipeline.create(
@@ -21,6 +21,15 @@ async def test_group(autojump_clock):
         async for item in aiter:
             result.append(item)
         assert result == [(0, 1, 2), (3, 4)]
+
+async def test_group_bundles(autojump_clock):
+    async with Pipeline.create(
+        Group(2.5, spam_wait_spam_integers(5))
+    ) as pipeline, pipeline.tap() as aiter:
+        result = []
+        async for item in aiter:
+            result.append(item)
+        assert result == [(0, 1, 2, 3, 4), (0, 1, 2, 3, 4)]
 
 async def test_delay(autojump_clock):
     async def timestamp():

@@ -17,3 +17,10 @@ async def produce_alphabet(interval, *, max=3, delay=0):
         if i == max - 1:
             break
         await trio.sleep(interval)
+
+async def spam_wait_spam_integers(interval):
+    async for i in produce_increasing_integers(.1, max=5, delay=.1):
+        yield i
+    await trio.sleep(interval)
+    async for i in produce_increasing_integers(.1, max=5, delay=.1):
+        yield i

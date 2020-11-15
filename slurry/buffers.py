@@ -98,26 +98,35 @@ class Group(Section):
         self.reducer = reducer
 
     async def pump(self, input, output):
-        if input is None:
-            if self.source is not None:
-                input = self.source
-            else:
-                raise RuntimeError('No input provided.')
-        async with output, aclosing(input) as aiter:
-            while True:
-                buffer = []
-                try:
-                    self._add_item(await aiter.__anext__(), buffer)
-                    with trio.move_on_after(self.interval):
-                        while True:
-                            if len(buffer) == self.max_size:
-                                break
-                            self._add_item(await aiter.__anext__(), buffer)
-                except StopAsyncIteration:
-                    if buffer:
-                        await output.send(self._process_result(buffer))
-                    break
-                await output.send(self._process_result(buffer))
+        async with trio.open_nursery() as nursery:
+            if input is None:
+                if self.source is not None:
+                   input = self.source
+                else:
+                    raise RuntimeError('No input provided.')
+            async with output:
+                send_channel, receive_channel = trio.open_memory_channel(0)
+                async def pull_task():
+                    async with send_channel, aclosing(input) as aiter:
+                        async for item in aiter:
+                            await send_channel.send(item)
+                nursery.start_soon(pull_task)
+    
+                while True:
+                    buffer = []
+                    try:
+                        self._add_item(await receive_channel.receive(), buffer)
+                        with trio.move_on_after(self.interval):
+                            while True:
+                                if len(buffer) == self.max_size:
+                                    break
+                                self._add_item(await receive_channel.receive(), buffer)
+                    except trio.EndOfChannel:
+                        if buffer:
+                            await output.send(self._process_result(buffer))
+                        break
+                    await output.send(self._process_result(buffer))
+            
 
     def _add_item(self, item, buffer):
         if self.mapper is not None:
