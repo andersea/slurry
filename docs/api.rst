@@ -36,11 +36,6 @@ Delay
 ^^^^^
 .. autoclass:: Delay
 
-RateLimit
-^^^^^^^^^
-.. autoclass:: RateLimit
-
-
 Combiners
 ---------
 .. automodule:: slurry.combiners
@@ -76,6 +71,10 @@ Filter
 Changes
 ^^^^^^^
 .. autoclass:: Changes
+
+RateLimit
+^^^^^^^^^
+.. autoclass:: RateLimit
 
 
 Producers

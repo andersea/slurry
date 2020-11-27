@@ -177,30 +177,3 @@ class Delay(Section):
                     if timestamp > now:
                         await trio.sleep(timestamp - now)
                     await output.send(item)
-
-class RateLimit(Section):
-    """Limits data rate of an input to a certain interval.
-
-    The first item received is transmitted and triggers a timer. Any other items received while
-    the timer is active are discarded. After the timer runs out, the cycle can repeat.
-
-    :param interval: Minimum number of seconds between each sent item.
-    :type interval: float
-    :param source: Input when used as first section.
-    :type source: Optional[AsyncIterable[Any]]
-    """
-    def __init__(self, interval, source=None):
-        super().__init__()
-        self.source = source
-        self.interval = interval
-
-    async def pump(self, input, output):
-        if self.source is not None:
-            input = self.source
-        then = 0
-        async with aclosing(input) as aiter, output:
-            async for item in aiter:
-                now = trio.current_time()
-                if now - then > self.interval:
-                    then = now
-                    await output.send(item)
