@@ -1,5 +1,5 @@
 """An async streaming data processing framework."""
-__version__ = '0.4.4'
+__version__ = '0.5.0'
 
 from .pipeline import Pipeline
 
