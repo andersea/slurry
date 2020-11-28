@@ -1,5 +1,9 @@
 # History
 
+## v0.5.0
+
+* Per subject rate limiting now allows seperate limiters for different item types depending on a chosen subject.
+
 ## v0.4.4
 
 * Fix Group section. Triggering the timeout cancel scope would close the input generator, stopping further output. To fix this, input iteration is now fully decoupled from output generation with a seperate pull task.
