@@ -13,7 +13,7 @@ async def test_window(autojump_clock):
             result.append(i)
         assert result == [(0,), (0, 1), (0, 1, 2), (1, 2, 3), (2, 3, 4)]
 
-async def test_group(autojump_clock):
+async def test_group_max_size(autojump_clock):
     async with Pipeline.create(
         Group(2.5, produce_increasing_integers(1, max=5), max_size=3)
     ) as pipeline, pipeline.tap() as aiter:
@@ -22,7 +22,7 @@ async def test_group(autojump_clock):
             result.append(item)
         assert result == [(0, 1, 2), (3, 4)]
 
-async def test_group_bundles(autojump_clock):
+async def test_group_timeout(autojump_clock):
     async with Pipeline.create(
         Group(2.5, spam_wait_spam_integers(5))
     ) as pipeline, pipeline.tap() as aiter:
