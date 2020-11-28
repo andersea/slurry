@@ -1,7 +1,8 @@
 """Pipeline sections that filter the incoming items."""
-from typing import Any, AsyncIterable, Optional
+from typing import Any, AsyncIterable, Callable, Hashable, Optional, Union
 
 from async_generator import aclosing
+import trio
 
 from .abc import Section
 
@@ -102,23 +103,45 @@ class RateLimit(Section):
     The first item received is transmitted and triggers a timer. Any other items received while
     the timer is active are discarded. After the timer runs out, the cycle can repeat.
 
+    Per subject rate limiting is supported by supplying either a hashable value or a callable as
+    subject.
+    In case of a hashable value, each received item is assumed to be a mapping, with the subject
+    indicating the key containing the value that should be used for rate limiting.
+    If a callable is supplied, it will be called with the item as argument and should return a
+    hashable value.
+
     :param interval: Minimum number of seconds between each sent item.
     :type interval: float
     :param source: Input when used as first section.
     :type source: Optional[AsyncIterable[Any]]
+    :param subject: Subject for per subject rate limiting.
+    :type subject: Optional[]
     """
-    def __init__(self, interval, source=None):
+    def __init__(self,
+                 interval,
+                 source: Optional[AsyncIterable[Any]] = None,
+                 *,
+                 subject: Optional[Union[Hashable, Callable[[Any], Hashable]]] = None):
         super().__init__()
         self.source = source
         self.interval = interval
+        self.subject = subject
 
     async def pump(self, input, output):
         if self.source is not None:
             input = self.source
-        then = 0
-        async with aclosing(input) as aiter, output:
+        if self.subject is None:
+            get_subject = lambda item: None
+        elif callable(self.subject):
+            get_subject = self.subject
+        else:
+            get_subject = lambda item: item[self.subject]
+        timestamps = {}
+        async with output, aclosing(input) as aiter:
             async for item in aiter:
                 now = trio.current_time()
-                if now - then > self.interval:
-                    then = now
+                subject = get_subject(item)
+                then = timestamps.get(subject)
+                if then is None or now - then  > self.interval:
+                    timestamps[subject] = now
                     await output.send(item)
