@@ -1,5 +1,11 @@
 # History
 
+## v0.5.1
+
+* Fix early tap closure. If a tap was closed, while items was still waiting to be sent upstream, it would cause an unhandled
+BrokenResourceError to be thrown. Now, if all taps are closed, the immediate upstream iterable will be closed, and the pipeline
+will stop processing any further items. Any upstream sections will be expected to handle downstream channel closures gracefully.
+
 ## v0.5.0
 
 * Per subject rate limiting now allows seperate limiters for different item types depending on a chosen subject.
