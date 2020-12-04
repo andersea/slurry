@@ -100,6 +100,9 @@ class Pipeline:
 
         Multiple channels can be opened and will receive a copy of the output data.
 
+        If all open taps are closed, the immidiate upstream section or iterable will be closed as well, and no
+        further items can be sent, from that point on.
+
         .. note::
             The output is sent by reference, so if the output is a mutable type and
             a consumer changes it, other consumers will see the changed output.
