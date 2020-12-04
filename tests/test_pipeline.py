@@ -15,3 +15,13 @@ async def test_pipeline_passthrough(autojump_clock):
             async for i in aiter:
                 result.append(i)
         assert result == [0, 1, 2]
+
+async def test_early_tap_closure():
+    async def spammer():
+        for i in range(2):
+            yield i
+    
+    async with Pipeline.create(spammer()) as pipeline, pipeline.tap() as aiter:
+        async for i in aiter:
+            assert isinstance(i, int)
+            break

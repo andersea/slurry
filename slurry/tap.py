@@ -22,6 +22,7 @@ class Tap:
         self.send_channel = send_channel
         self.timeout = timeout
         self.retrys = retrys
+        self.closed = False
 
     async def send(self, item):
         """Handles the transmission of a single item from the pipeline.
@@ -34,7 +35,10 @@ class Tap:
         """
         for _ in range(self.retrys + 1):
             with trio.move_on_after(self.timeout):
-                await self.send_channel.send(item)
+                try:
+                    await self.send_channel.send(item)
+                except trio.BrokenResourceError:
+                    self.closed = True
                 return
             await trio.sleep(0)
         raise trio.BusyResourceError('Unable to send item.')
