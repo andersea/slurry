@@ -84,7 +84,7 @@ class Pipeline:
                         # Hmm.. Debatable. Should closing all taps close the pipeline?
                         break
                     for tap in self._taps:
-                        nursery.start_soon(tap.send, item)                    
+                        nursery.start_soon(tap.send, item)
 
         # There is no more output to send. Close the taps.
         for tap in self._taps:
