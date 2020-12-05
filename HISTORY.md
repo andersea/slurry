@@ -1,5 +1,10 @@
 # History
 
+## v0.6.0
+
+* Refactored: The tap closure fixes in 0.5.1 didn't entirely hit the mark, triggering a major refactoring of input and output resource management. Additional tests have been added to further strengthen coverage of correct resource management.
+* Fixed: The Repeat section could concievably drop items from the input source in certain rare cases. The new implementation guarantees that all input items are send on to the output, while still repeating received items in case of no activity.
+
 ## v0.5.1
 
 * Fix early tap closure. If a tap was closed, while items was still waiting to be sent upstream, it would cause an unhandled
