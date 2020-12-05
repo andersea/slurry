@@ -22,12 +22,14 @@ class Skip(Section):
         self.source = source
 
     async def pump(self, input, output):
-        if input is None:
-            if self.source is not None:
-                input = self.source
-            else:
-                raise RuntimeError('No input provided.')
-        async with aclosing(input) as aiter, output:
+        if input:
+            source = input
+        elif self.source:
+            source = self.source
+        else:
+            raise RuntimeError('No input provided.')
+
+        async with aclosing(source) as aiter:
             for _ in range(self.count):
                 await aiter.__anext__()
             async for item in aiter:
@@ -52,13 +54,14 @@ class Filter(Section):
         self.source = source
 
     async def pump(self, input, output):
-        if input is None:
-            if self.source is not None:
-                input = self.source
-            else:
-                raise RuntimeError('No input provided.')
+        if input:
+            source = input
+        elif self.source:
+             source = self.source
+        else:
+            raise RuntimeError('No input provided.')
 
-        async with aclosing(input) as aiter, output:
+        async with aclosing(source) as aiter:
             async for item in aiter:
                 if self.func(item):
                     await output.send(item)
@@ -84,14 +87,16 @@ class Changes(Section):
         self.source = source
 
     async def pump(self, input, output):
-        if input is None:
-            if self.source is not None:
-                input = self.source
-            else:
-                raise RuntimeError('No input provided.')
+        if input:
+            source = input
+        elif self.source:
+            source = self.source
+        else:
+            raise RuntimeError('No input provided.')
+
         token = object()
         last = token
-        async with aclosing(input) as aiter, output:
+        async with aclosing(source) as aiter:
             async for item in aiter:
                 if last is token or item != last:
                     last = item
@@ -128,20 +133,26 @@ class RateLimit(Section):
         self.subject = subject
 
     async def pump(self, input, output):
-        if self.source is not None:
-            input = self.source
+        if input:
+            source = input
+        elif self.source:
+            source = self.source
+        else:
+            raise RuntimeError('No input provided.')
+
         if self.subject is None:
             get_subject = lambda item: None
         elif callable(self.subject):
             get_subject = self.subject
         else:
             get_subject = lambda item: item[self.subject]
+
         timestamps = {}
-        async with output, aclosing(input) as aiter:
+        async with aclosing(source) as aiter:
             async for item in aiter:
                 now = trio.current_time()
                 subject = get_subject(item)
                 then = timestamps.get(subject)
-                if then is None or now - then  > self.interval:
+                if then is None or now - then > self.interval:
                     timestamps[subject] = now
                     await output.send(item)

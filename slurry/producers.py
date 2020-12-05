@@ -1,4 +1,5 @@
 """Pipeline sections that produce data streams."""
+import math
 from typing import Any
 
 import trio
@@ -19,34 +20,44 @@ class Repeat(Section):
 
     :raises RuntimeError: If used as a first section and no default is provided.
     """
-    def __init__(self, interval: float, **kwargs):
+    def __init__(self, interval: float, *args, **kwargs):
         self.interval = interval
-        self.kwargs = kwargs
-        self.item = None
-        self._item_set = trio.Event()
+        self.has_default = False
+        self.default = None
+        if args:
+            self.has_default = True
+            self.default = args[0]
+        elif 'default' in kwargs:
+            self.has_default = True
+            self.default = kwargs['default']
 
     async def pump(self, input, output):
-        if input is None and 'default' not in self.kwargs:
+        if input is None and not self.has_default:
             # pylint: disable=line-too-long
-            raise RuntimeError('A default value must be provided, if Repeat is used as first section.')
-        timer_cancel_scope = None
-
-        async def set_item_task():
-            async with aclosing(input) as aiter:
-                async for item in aiter:
-                    self.item = item
-                    self._item_set.set()
-                    if timer_cancel_scope is not None:
-                        timer_cancel_scope.cancel()
+            raise RuntimeError('If Repeat is used as first section,  default value must be provided.')
 
         async with trio.open_nursery() as nursery:
-            if input is not None:
-                nursery.start_soon(set_item_task)
-            if 'default' in self.kwargs:
-                self.item = self.kwargs['default']
-            else:
-                await self._item_set.wait()
-            while True:
-                await output.send(self.item)
-                with trio.CancelScope() as timer_cancel_scope:
-                    await trio.sleep(self.interval)
+
+            def start_new_repeater(item):
+                cancel_scope = trio.CancelScope()
+                async def repeater():
+                    with cancel_scope:
+                        while True:
+                            await trio.sleep(self.interval)
+                            await output.send(item)                
+                nursery.start_soon(repeater)
+                return cancel_scope
+
+            previous_repeater = None
+
+            if self.has_default:
+                await output.send(self.default)
+                previous_repeater = start_new_repeater(self.default)
+
+            if input:
+                async with aclosing(input) as aiter:
+                    async for item in aiter:
+                        if previous_repeater:
+                            previous_repeater.cancel()
+                        await output.send(item)
+                        previous_repeater = start_new_repeater(item)

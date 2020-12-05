@@ -32,18 +32,18 @@ class Chain(Section):
         self.place_input = _validate_place_input(place_input)
 
     async def pump(self, input, output):
-        if input is not None:
-            if self.place_input == 'first':
-                sources = (input, *self.sources)
-            elif self.place_input == 'last':
+        if input:
+            if self.place_input == 'last':
                 sources = (*self.sources, input)
+            else:
+                sources = (input, *self.sources)
         else:
             sources = self.sources
-        async with output:
-            for source in sources:
-                async with aclosing(source) as agen:
-                    async for item in agen:
-                        await output.send(item)
+
+        for source in sources:
+            async with aclosing(source) as agen:
+                async for item in agen:
+                    await output.send(item)
 
 class Merge(Section):
     """Merges asynchronous sequences or pipeline sections.
@@ -64,23 +64,22 @@ class Merge(Section):
         self.sources = sources
 
     async def pump(self, input, output):
-        if input is not None:
-            sources = (input, *self.sources)
-        else:
-            sources = self.sources
-        async with output, trio.open_nursery() as nursery:
+        async with trio.open_nursery() as nursery:
 
-            async def pull_task(source, output):
+            async def pull_task(source):
                 if isinstance(source, Section):
                     send_channel, receive_channel = trio.open_memory_channel(0)
                     nursery.start_soon(source.pump, None, send_channel)
                     source = receive_channel
-                async with output, aclosing(source) as aiter:
+                async with aclosing(source) as aiter:
                     async for item in aiter:
                         await output.send(item)
 
-            for source in sources:
-                nursery.start_soon(pull_task, source, output.clone())
+            if input:
+                nursery.start_soon(pull_task, input)
+
+            for source in self.sources:
+                nursery.start_soon(pull_task, source)
 
 class Zip(Section):
     """Zip asynchronous sequences.
@@ -106,28 +105,42 @@ class Zip(Section):
         self.place_input = _validate_place_input(place_input)
 
     async def pump(self, input, output):
-        if input is not None:
-            if self.place_input == 'first':
-                sources = (input, *self.sources)
-            elif self.place_input == 'last':
+        if input:
+            if self.place_input == 'last':
                 sources = (*self.sources, input)
+            else:
+                sources = (input, *self.sources)
         else:
             sources = self.sources
 
-        async with output:
-            with trio.CancelScope() as cancel_scope:
-                async def pull_task(source, results, index):
-                    try:
-                        results[index] = await source.__anext__()
-                    except StopAsyncIteration:
-                        cancel_scope.cancel()
+        results = [None for _ in sources]
+        results_available = 0
+        result_complete = trio.Event()
+        pull_next = trio.Condition()
 
-                while True:
-                    results = [None for _ in sources]
-                    async with trio.open_nursery() as nursery:
-                        for i, source in builtins.enumerate(sources):
-                            nursery.start_soon(pull_task, source, results, i)
-                    await output.send(tuple(results))
+        async with trio.open_nursery() as nursery:
+            async def pull_task(source, index):
+                nonlocal results_available
+                async with aclosing(source) as aiter:
+                    async for item in aiter:
+                        results[index] = item
+                        results_available += 1
+                        if results_available == len(results):
+                            result_complete.set()
+                        async with pull_next:
+                            await pull_next.wait()
+                nursery.cancel_scope.cancel()
+
+            for i, source in builtins.enumerate(sources):
+                nursery.start_soon(pull_task, source, i)
+
+            while True:
+                await result_complete.wait()
+                await output.send(tuple(results))
+                async with pull_next:
+                    results_available = 0
+                    result_complete = trio.Event()
+                    pull_next.notify_all()
 
 class ZipLatest(Section):
     """Zips asynchronous sequences and outputs a result on every received item.
@@ -188,15 +201,15 @@ class ZipLatest(Section):
 
         if input is not None:
             if self.monitor_input:
-                if self.place_input == 'first':
-                    monitor = (input, *monitor)
-                elif self.place_input == 'last':
+                if self.place_input == 'last':
                     monitor = (*monitor, input)
+                else:
+                    monitor = (input, *monitor)
             else:
-                if self.place_input == 'first':
-                    sources = (input, *sources)
-                elif self.place_input == 'last':
+                if self.place_input == 'last':
                     sources = (*sources, input)
+                else:
+                    sources = (input, *sources)
 
         results = [self.default for _ in itertools.chain(sources, monitor)]
         ready = [False for _ in results]

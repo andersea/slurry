@@ -42,13 +42,16 @@ class Window(Section):
         self.min_size = min_size
 
     async def pump(self, input, output):
-        if input is None:
-            if self.source is not None:
-                input = self.source
-            else:
-                raise RuntimeError('No input provided.')
+        if input:
+            source = input
+        elif self.source:
+            source = self.source
+        else:
+            raise RuntimeError('No input provided.')
+
         buf = deque()
-        async with aclosing(input) as aiter, output:
+
+        async with aclosing(source) as aiter:
             async for item in aiter:
                 now = trio.current_time()
                 buf.append((item, now))
@@ -99,34 +102,34 @@ class Group(Section):
 
     async def pump(self, input, output):
         async with trio.open_nursery() as nursery:
-            if input is None:
-                if self.source is not None:
-                   input = self.source
-                else:
-                    raise RuntimeError('No input provided.')
-            async with output:
-                send_channel, receive_channel = trio.open_memory_channel(0)
-                async def pull_task():
-                    async with send_channel, aclosing(input) as aiter:
-                        async for item in aiter:
-                            await send_channel.send(item)
-                nursery.start_soon(pull_task)
-    
-                while True:
-                    buffer = []
-                    try:
-                        self._add_item(await receive_channel.receive(), buffer)
-                        with trio.move_on_after(self.interval):
-                            while True:
-                                if len(buffer) == self.max_size:
-                                    break
-                                self._add_item(await receive_channel.receive(), buffer)
-                    except trio.EndOfChannel:
-                        if buffer:
-                            await output.send(self._process_result(buffer))
-                        break
-                    await output.send(self._process_result(buffer))
-            
+            if input:
+                source = input
+            elif self.source:
+                source = self.source
+            else:
+                raise RuntimeError('No input provided.')
+
+            send_channel, receive_channel = trio.open_memory_channel(0)
+            async def pull_task():
+                async with send_channel, aclosing(source) as aiter:
+                    async for item in aiter:
+                        await send_channel.send(item)
+            nursery.start_soon(pull_task)
+
+            while True:
+                buffer = []
+                try:
+                    self._add_item(await receive_channel.receive(), buffer)
+                    with trio.move_on_after(self.interval):
+                        while True:
+                            if len(buffer) == self.max_size:
+                                break
+                            self._add_item(await receive_channel.receive(), buffer)
+                except trio.EndOfChannel:
+                    if buffer:
+                        await output.send(self._process_result(buffer))
+                    break
+                await output.send(self._process_result(buffer))
 
     def _add_item(self, item, buffer):
         if self.mapper is not None:
@@ -157,23 +160,24 @@ class Delay(Section):
         self.interval = interval
 
     async def pump(self, input, output):
-        if input is None:
-            if self.source is not None:
-                input = self.source
-            else:
-                raise RuntimeError('No input provided.')
+        if input:
+            source = input
+        elif self.source:
+            source = self.source
+        else:
+            raise RuntimeError('No input provided.')
         buffer_input_channel, buffer_output_channel = trio.open_memory_channel(math.inf)
 
         async def pull_task():
-            async with buffer_input_channel, aclosing(input) as aiter:
+            async with buffer_input_channel, aclosing(source) as aiter:
                 async for item in aiter:
                     await buffer_input_channel.send((item, trio.current_time() + self.interval))
 
         async with trio.open_nursery() as nursery:
             nursery.start_soon(pull_task)
-            async with buffer_output_channel, output:
-                async for item, timestamp in buffer_output_channel:
-                    now = trio.current_time()
-                    if timestamp > now:
-                        await trio.sleep(timestamp - now)
-                    await output.send(item)
+            async for item, timestamp in buffer_output_channel:
+                now = trio.current_time()
+                if timestamp > now:
+                    await trio.sleep(timestamp - now)
+                await output.send(item)
+            nursery.cancel_scope.cancel()

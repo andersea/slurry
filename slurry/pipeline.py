@@ -74,7 +74,7 @@ class Pipeline:
 
             # Start pumps
             for section in sections:
-                nursery.start_soon(section.pump, next(channels), next(channels))
+                nursery.start_soon(self._section_pump, section, next(channels), next(channels))
 
             # Output to taps
             async with aclosing(next(channels)) as aiter:
@@ -89,6 +89,15 @@ class Pipeline:
         # There is no more output to send. Close the taps.
         for tap in self._taps:
             await tap.send_channel.aclose()
+
+    async def _section_pump(self, section, input, output):
+        try:
+            await section.pump(input, output)
+        except trio.BrokenResourceError:
+            pass
+        if input:
+            await input.aclose()
+        await output.aclose()
 
     def tap(self, *,
             max_buffer_size: int = 0,

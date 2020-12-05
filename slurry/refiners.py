@@ -21,11 +21,13 @@ class Map(Section):
         self.source = source
 
     async def pump(self, input, output):
-        if input is None:
-            if self.source is not None:
-                input = self.source
-            else:
-                raise RuntimeError('No input provided.')
-        async with aclosing(input) as aiter, output:
+        if input:
+            source = input
+        elif self.source:
+            source = self.source
+        else:
+            raise RuntimeError('No input provided.')
+
+        async with aclosing(source) as aiter:
             async for item in aiter:
                 await output.send(self.func(item))
