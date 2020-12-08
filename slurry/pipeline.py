@@ -8,7 +8,6 @@ output stream.
 The pipeline can also be extended dynamically with new pipeline sections with
 :meth:`Pipeline.extend`, adding additional processing.
 """
-__version__ = '0.1.0'
 
 from itertools import chain
 import math
@@ -17,8 +16,9 @@ from typing import AsyncContextManager, Sequence
 import trio
 from async_generator import aclosing, asynccontextmanager
 
-from .abc import Section
+from .abc import Section, ThreadSection
 from .tap import Tap
+from .threading import sync_input, sync_output
 
 class Pipeline:
     """The main Slurry ``Pipeline`` class.
@@ -61,7 +61,7 @@ class Pipeline:
         """Runs the pipeline."""
         await self._enabled.wait()
 
-        if isinstance(self.sections[0], Section):
+        if isinstance(self.sections[0], (Section, ThreadSection)):
             first_input = None
             sections = self.sections
         else:
@@ -92,7 +92,10 @@ class Pipeline:
 
     async def _section_pump(self, section, input, output):
         try:
-            await section.pump(input, output)
+            if isinstance(section, Section):
+                await section.pump(input, output)
+            elif isinstance(section, ThreadSection):
+                await trio.to_thread.run_sync(section.pump, sync_input(input), sync_output(output))
         except trio.BrokenResourceError:
             pass
         if input:

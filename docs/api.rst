@@ -20,6 +20,16 @@ Section
 .. autoclass:: Section
   :members:
 
+ThreadSection
+^^^^^^^^^^^^^
+.. autoclass:: ThreadSection
+  :members:
+
+SyncSendObject
+^^^^^^^^^^^^^^
+.. autoclass:: SyncSendObject
+  :members:
+
 Buffers
 -------
 .. automodule:: slurry.buffers
