@@ -1,5 +1,9 @@
 # History
 
+## v0.7.0
+
+* New ThreadSection abc. Synchronous python code can now be run transparently next to asynchronous Trio code, using the new ThreadSection class. The pump api is identical to the async version, except that input is a synchronous iterator and the output send function is synchronous function.
+
 ## v0.6.0
 
 * Refactored: The tap closure fixes in 0.5.1 didn't entirely hit the mark, triggering a major refactoring of input and output resource management. Additional tests have been added to further strengthen coverage of correct resource management.
