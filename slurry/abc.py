@@ -1,6 +1,6 @@
 """ Abstract Base Classes for building pipeline sections. """
 from abc import ABC, abstractmethod
-from typing import Any, AsyncIterable, Optional
+from typing import Any, AsyncIterable, Iterable, Optional
 
 import trio
 
@@ -34,4 +34,38 @@ class Section(ABC):
         :type input: Optional[AsyncIterable[Any]]
         :param output: The output memory channel where results are sent.
         :type output: trio.MemorySendChannel
+        """
+
+class SyncSendObject(ABC):
+    """Defines an interface for sending items synchronously."""
+    @abstractmethod
+    def send(self, item: Any):
+        """A blocking method for sending items."""
+
+class ThreadSection(ABC):
+    """ThreadSection defines a section interface which uses a synchronous pump. The pump method
+    runs in a background thread and will not block the trio event loop."""
+    @abstractmethod
+    def pump(self, input: Optional[Iterable[Any]], output: SyncSendObject):
+        """
+        The ``ThreadSection`` pump method is designed to have an api that is as close to the
+        async api as possible. The input is a synchronous iterable instead of an async iterable,
+        and the output implements a similar api to ``trio.MemorySendChannel.send()`` but is
+        synchronous.
+
+        Ordinary async sections and synchronous threaded sections can be freely mixed and matched
+        in the pipeline. The pipeline will automatically detect the section type, as long as you
+        inherit from this abc, and it will take care of launching the pump function in a thread
+        and bridge the input and outputs between trio and sync.
+
+        .. note::
+            Trio has a limit on how many threads can run simultaneously. See the
+            `trio documentation <https://trio.readthedocs.io/en/stable/reference-core.html#trio-s-philosophy-about-managing-worker-threads>`_
+            for more information.
+
+        :param input: The input data feed. Like with ordinary sections, this can be ``None`` if
+            ``ThreadSection`` is the first section in the pipeline.
+        :type input: Optional[Iterable[Any]]
+        :param output: The synchronous output send interface.
+        :type output: SyncSendObject
         """
