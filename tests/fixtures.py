@@ -1,7 +1,10 @@
 """Asynchronous generators for testing sections."""
+import math
 import string
 
 import trio
+
+from slurry import ThreadSection
 
 async def produce_increasing_integers(interval, *, max=3, delay=0):
     await trio.sleep(delay)
@@ -43,3 +46,13 @@ async def produce_mappings(interval):
         vehicle['number'] = i
         yield vehicle
         await trio.sleep(interval)
+
+class SyncSquares(ThreadSection):
+    def __init__(self, raise_after=math.inf) -> None:
+        self.raise_after = raise_after
+
+    def pump(self, input, output):
+        for i, j in enumerate(input):
+            output.send(j*j)
+            if i == self.raise_after - 1:
+                raise RuntimeError('Max iterations reached.')
