@@ -44,9 +44,7 @@ Enough talk! Time to see what's up!
    async with Pipeline.create(
         Zip(produce_increasing_integers(1, max=3), produce_alphabet(0.9, max=3))
     ) as pipeline, pipeline.tap() as aiter:
-            results = []
-            async for item in aiter:
-                results.append(item)
+            results = [item async for item in aiter]
             assert results == [(0,'a'), (1, 'b'), (2, 'c')]
 
 The example producers (which are not part of the framework) could look like this:
