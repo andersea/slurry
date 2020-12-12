@@ -1,12 +1,13 @@
 """Pipeline sections for combining multiple inputs into a single output."""
 import builtins
 import itertools
-from typing import Any, AsyncIterable, Sequence, Union
+from typing import Any, AsyncIterable, Optional, Sequence, Union
 
 import trio
 from async_generator import aclosing
 
-from .abc import Section
+from .abc import Section, ThreadSection, ProcessSection
+from .pump import pump
 
 class Chain(Section):
     """Chains asynchronous sequences.
@@ -63,13 +64,13 @@ class Merge(Section):
         super().__init__()
         self.sources = sources
 
-    async def pump(self, input, output):
+    async def pump(self, input: Optional[AsyncIterable[Any]], output: trio.MemorySendChannel):
         async with trio.open_nursery() as nursery:
 
             async def pull_task(source):
-                if isinstance(source, Section):
+                if isinstance(source, (Section, ThreadSection, ProcessSection)):
                     send_channel, receive_channel = trio.open_memory_channel(0)
-                    nursery.start_soon(source.pump, None, send_channel)
+                    nursery.start_soon(pump, source, None, send_channel)
                     source = receive_channel
                 async with aclosing(source) as aiter:
                     async for item in aiter:

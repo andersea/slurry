@@ -2,7 +2,7 @@ import pytest
 import trio
 
 from slurry import Pipeline
-from slurry.producers import Repeat
+from slurry.sections import Repeat
 
 from .fixtures import produce_alphabet
 

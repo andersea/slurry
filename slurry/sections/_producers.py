@@ -1,7 +1,4 @@
 """Pipeline sections that produce data streams."""
-import math
-from typing import Any
-
 import trio
 from async_generator import aclosing
 

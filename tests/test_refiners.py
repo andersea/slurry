@@ -1,5 +1,5 @@
 from slurry import Pipeline
-from slurry.refiners import Map
+from slurry.sections import Map
 
 from .fixtures import produce_increasing_integers
 

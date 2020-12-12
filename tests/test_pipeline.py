@@ -1,7 +1,7 @@
-import pytest
 import trio
 
-from slurry import Pipeline, Section, ThreadSection
+from slurry import Pipeline
+from slurry.sections.abc import Section
 
 from .fixtures import produce_increasing_integers
 
@@ -44,45 +44,3 @@ async def test_early_tap_closure_section(autojump_clock):
             async for i in aiter:
                 assert isinstance(i, int)
                 break
-
-async def test_thread_section(autojump_clock):
-    class SyncSquares(ThreadSection):
-        def pump(self, input, output):
-            for i in input:
-                output.send(i*i)
-    async with Pipeline.create(
-        produce_increasing_integers(1, max=5),
-        SyncSquares()
-    ) as pipeline, pipeline.tap() as aiter:
-        result = [i async for i in aiter]
-        assert result == [0, 1, 4, 9, 16]
-
-async def test_thread_section_early_break(autojump_clock):
-    class SyncSquares(ThreadSection):
-        def pump(self, input, output):
-            for i in input:
-                output.send(i*i)
-    async with Pipeline.create(
-        produce_increasing_integers(1, max=5),
-        SyncSquares()
-    ) as pipeline, pipeline.tap() as aiter:
-        async for i in aiter:
-            if i == 4:
-                break
-        assert i == 4
-
-async def test_thread_section_exception(autojump_clock):
-    class SyncSquares(ThreadSection):
-        def pump(self, input, output):
-            for i in input:
-                output.send(i*i)
-                if i == 3:
-                    raise RuntimeError('Error')
-    with pytest.raises(RuntimeError):
-        async with Pipeline.create(
-            produce_increasing_integers(1, max=5),
-            SyncSquares()
-        ) as pipeline, pipeline.tap() as aiter:
-                async for i in aiter:
-                    pass
-    assert i == 9

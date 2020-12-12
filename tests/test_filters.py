@@ -1,6 +1,5 @@
 from slurry import Pipeline
-from slurry.combiners import Merge
-from slurry.filters import RateLimit, Skip, Filter, Changes
+from slurry.sections import Merge, RateLimit, Skip, Filter, Changes
 
 from .fixtures import produce_increasing_integers, produce_mappings
 
