@@ -5,7 +5,6 @@
 * New ProcessSection abc. Code can now be spawned in a seperate python process, making true concurrency possible!
 * This is a major refactoring. Lots of files have been moved around. Things will break if you upgrade to this version. More breaking changes are planned for 0.9.0 in order to simplify the api across section types.
 
-
 ## v0.7.0
 
 * New ThreadSection abc. Synchronous python code can now be run transparently next to asynchronous Trio code, using the new ThreadSection class. The pump api is identical to the async version, except that input is a synchronous iterator and the output send function is synchronous function.
