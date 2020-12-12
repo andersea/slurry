@@ -13,7 +13,7 @@ Pipeline
 
 Abc
 ---
-.. automodule:: slurry.abc
+.. automodule:: slurry.sections.abc
 
 Section
 ^^^^^^^
@@ -25,82 +25,87 @@ ThreadSection
 .. autoclass:: ThreadSection
   :members:
 
-SyncSendObject
+ProcessSection
 ^^^^^^^^^^^^^^
-.. autoclass:: SyncSendObject
+.. autoclass:: ProcessSection
+  :members:
+
+Pump
+----
+.. automodule:: slurry.sections.pump
   :members:
 
 Buffers
 -------
-.. automodule:: slurry.buffers
+.. automodule:: slurry.sections._buffers
 
 Window
 ^^^^^^
-.. autoclass:: Window
+.. autoclass:: slurry.sections.Window
 
 Group
 ^^^^^
-.. autoclass:: Group
+.. autoclass:: slurry.sections.Group
 
 Delay
 ^^^^^
-.. autoclass:: Delay
+.. autoclass:: slurry.sections.Delay
 
 Combiners
 ---------
-.. automodule:: slurry.combiners
+.. automodule:: slurry.sections._combiners
 
 Chain
 ^^^^^
-.. autoclass:: Chain
+.. autoclass:: slurry.sections.Chain
 
 Merge
 ^^^^^
-.. autoclass:: Merge
+.. autoclass:: slurry.sections.Merge
 
 Zip
 ^^^
-.. autoclass:: Zip
+.. autoclass:: slurry.sections.Zip
 
 ZipLatest
 ^^^^^^^^^
-.. autoclass:: ZipLatest
+.. autoclass:: slurry.sections.ZipLatest
 
 Filters
 -------
-.. automodule:: slurry.filters
+.. automodule:: slurry.sections._filters
 
 Skip
 ^^^^
-.. autoclass:: Skip
+.. autoclass:: slurry.sections.Skip
 
 Filter
 ^^^^^^
-.. autoclass:: Filter
+.. autoclass:: slurry.sections.Filter
 
 Changes
 ^^^^^^^
-.. autoclass:: Changes
+.. autoclass:: slurry.sections.Changes
 
 RateLimit
 ^^^^^^^^^
-.. autoclass:: RateLimit
+.. autoclass:: slurry.sections.RateLimit
 
 
 Producers
 ---------
-.. automodule:: slurry.producers
+.. automodule:: slurry.sections._producers
 
 Repeat
 ^^^^^^
-.. autoclass:: Repeat
+.. autoclass:: slurry.sections.Repeat
 
 
 Refiners
 --------
-.. automodule:: slurry.refiners
+.. automodule:: slurry.sections._refiners
 
 Map
 ^^^
-.. autoclass:: Map
+.. autoclass:: slurry.sections.Map
 

@@ -1,6 +1,5 @@
 from slurry import Pipeline
-from slurry.combiners import Chain, Merge, Zip, ZipLatest
-from slurry.producers import Repeat
+from slurry.sections import Chain, Merge, Zip, ZipLatest, Repeat
 
 from .fixtures import produce_increasing_integers, produce_alphabet
 

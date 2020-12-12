@@ -1,6 +1,7 @@
 import trio
 
-from slurry import Pipeline, Window, Group, Delay
+from slurry import Pipeline
+from slurry.sections import Window, Group, Delay
 
 from .fixtures import produce_increasing_integers, spam_wait_spam_integers
 

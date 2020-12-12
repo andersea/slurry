@@ -16,9 +16,10 @@ from typing import AsyncContextManager, Sequence
 import trio
 from async_generator import aclosing, asynccontextmanager
 
-from .abc import Section, ThreadSection
+from .sections.abc import Section, ThreadSection, ProcessSection
+from .sections.pump import pump
 from .tap import Tap
-from .threading import sync_input, sync_output
+
 
 class Pipeline:
     """The main Slurry ``Pipeline`` class.
@@ -61,7 +62,7 @@ class Pipeline:
         """Runs the pipeline."""
         await self._enabled.wait()
 
-        if isinstance(self.sections[0], (Section, ThreadSection)):
+        if isinstance(self.sections[0], (Section, ThreadSection, ProcessSection)):
             first_input = None
             sections = self.sections
         else:
@@ -74,7 +75,7 @@ class Pipeline:
 
             # Start pumps
             for section in sections:
-                nursery.start_soon(self._section_pump, section, next(channels), next(channels))
+                nursery.start_soon(pump, section, next(channels), next(channels))
 
             # Output to taps
             async with aclosing(next(channels)) as aiter:
@@ -89,18 +90,6 @@ class Pipeline:
         # There is no more output to send. Close the taps.
         for tap in self._taps:
             await tap.send_channel.aclose()
-
-    async def _section_pump(self, section, input, output):
-        try:
-            if isinstance(section, Section):
-                await section.pump(input, output)
-            elif isinstance(section, ThreadSection):
-                await trio.to_thread.run_sync(section.pump, sync_input(input), sync_output(output))
-        except trio.BrokenResourceError:
-            pass
-        if input:
-            await input.aclose()
-        await output.aclose()
 
     def tap(self, *,
             max_buffer_size: int = 0,

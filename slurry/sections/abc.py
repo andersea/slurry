@@ -1,6 +1,6 @@
 """ Abstract Base Classes for building pipeline sections. """
 from abc import ABC, abstractmethod
-from typing import Any, AsyncIterable, Iterable, Optional
+from typing import Any, AsyncIterable, Callable, Iterable, Optional
 
 import trio
 
@@ -8,7 +8,7 @@ class Section(ABC):
     """Each pipeline section takes inputs from an async iterable, processes it and sends it to an
     output.
 
-    A Section must implement the ``pump`` abstract method, which will be scheduled to run as a task
+    A section must implement the ``pump`` abstract method, which will be scheduled to run as a task
     by the pipeline.
     """
 
@@ -36,22 +36,15 @@ class Section(ABC):
         :type output: trio.MemorySendChannel
         """
 
-class SyncSendObject(ABC):
-    """Defines an interface for sending items synchronously."""
-    @abstractmethod
-    def send(self, item: Any):
-        """A blocking method for sending items."""
-
 class ThreadSection(ABC):
     """ThreadSection defines a section interface which uses a synchronous pump. The pump method
     runs in a background thread and will not block the trio event loop."""
     @abstractmethod
-    def pump(self, input: Optional[Iterable[Any]], output: SyncSendObject):
+    def pump(self, input: Optional[Iterable[Any]], output: Callable[[Any], None]):
         """
         The ``ThreadSection`` pump method is designed to have an api that is as close to the
         async api as possible. The input is a synchronous iterable instead of an async iterable,
-        and the output implements a similar api to ``trio.MemorySendChannel.send()`` but is
-        synchronous.
+        and the output is a synchronous callable, similar to a ``Queue.put`` method.
 
         Ordinary async sections and synchronous threaded sections can be freely mixed and matched
         in the pipeline. The pipeline will automatically detect the section type, as long as you
@@ -67,5 +60,36 @@ class ThreadSection(ABC):
             ``ThreadSection`` is the first section in the pipeline.
         :type input: Optional[Iterable[Any]]
         :param output: The synchronous output send interface.
-        :type output: SyncSendObject
+        :type output: Callable[[Any], None]
+        """
+
+class ProcessSection(ABC):
+    """ProcessSection defines a section interface with a synchronous pump method that
+    runs in a separate process. Slurry makes use of the python
+    `multiprocessing <https://docs.python.org/3/library/multiprocessing.html>`_ module
+    to spawn the process.
+
+    .. note::
+        ProcessSection implementations must be `pickleable
+        <https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled>`_.
+    """
+
+    @abstractmethod
+    def pump(self, input: Optional[Iterable[Any]], output: Callable[[Any], None]):
+        """
+        The ``ProcessSection`` pump method works similar to the threaded version, however
+        since communication between processes is not as simple as it is between threads,
+        that are directly able to share memory with each other, there are some restrictions
+        to be aware of.
+
+        * Data that is to be sent to the input or transmitted on the output must be `pickleable
+          <https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled>`_.
+        * Since ``ProcessSection`` uses unbounded queues to transfer data behind the scenes, they
+          are unable to provide or receive backpressure.
+
+        :param input: The input data feed. Like with ordinary sections, this can be ``None`` if
+            ``ProcessSection`` is the first section in the pipeline.
+        :type input: Optional[Iterable[Any]]
+        :param output: The synchronous output send interface.
+        :type output: Callable[[Any], None]
         """
