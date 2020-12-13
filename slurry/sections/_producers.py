@@ -41,14 +41,14 @@ class Repeat(Section):
                     with cancel_scope:
                         while True:
                             await trio.sleep(self.interval)
-                            await output.send(item)                
+                            await output(item)                
                 nursery.start_soon(repeater)
                 return cancel_scope
 
             previous_repeater = None
 
             if self.has_default:
-                await output.send(self.default)
+                await output(self.default)
                 previous_repeater = start_new_repeater(self.default)
 
             if input:
@@ -56,5 +56,5 @@ class Repeat(Section):
                     async for item in aiter:
                         if previous_repeater:
                             previous_repeater.cancel()
-                        await output.send(item)
+                        await output(item)
                         previous_repeater = start_new_repeater(item)

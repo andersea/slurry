@@ -44,7 +44,7 @@ class Chain(Section):
         for source in sources:
             async with aclosing(source) as agen:
                 async for item in agen:
-                    await output.send(item)
+                    await output(item)
 
 class Merge(Section):
     """Merges asynchronous sequences or pipeline sections.
@@ -74,7 +74,7 @@ class Merge(Section):
                     source = receive_channel
                 async with aclosing(source) as aiter:
                     async for item in aiter:
-                        await output.send(item)
+                        await output(item)
 
             if input:
                 nursery.start_soon(pull_task, input)
@@ -137,7 +137,7 @@ class Zip(Section):
 
             while True:
                 await result_complete.wait()
-                await output.send(tuple(results))
+                await output(tuple(results))
                 async with pull_next:
                     results_available = 0
                     result_complete = trio.Event()
@@ -215,7 +215,7 @@ class ZipLatest(Section):
         results = [self.default for _ in itertools.chain(sources, monitor)]
         ready = [False for _ in results]
 
-        async with output, trio.open_nursery() as nursery:
+        async with trio.open_nursery() as nursery:
 
             async def pull_task(index, source, monitor=False):
                 async with aclosing(source) as aiter:
@@ -223,7 +223,7 @@ class ZipLatest(Section):
                         results[index] = item
                         ready[index] = True
                         if not monitor and (self.partial or False not in ready):
-                            await output.send(tuple(results))
+                            await output(tuple(results))
                 nursery.cancel_scope.cancel()
 
             for i, source in builtins.enumerate(sources):

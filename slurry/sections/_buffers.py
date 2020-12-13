@@ -58,7 +58,7 @@ class Window(Section):
                 while len(buf) > self.max_size or now - buf[0][1] > self.max_age:
                     buf.popleft()
                 if len(buf) >= self.min_size:
-                    await output.send(tuple(i[0] for i in buf))
+                    await output(tuple(i[0] for i in buf))
 
 class Group(Section):
     """Groups received items by time based interval.
@@ -127,9 +127,9 @@ class Group(Section):
                             self._add_item(await receive_channel.receive(), buffer)
                 except trio.EndOfChannel:
                     if buffer:
-                        await output.send(self._process_result(buffer))
+                        await output(self._process_result(buffer))
                     break
-                await output.send(self._process_result(buffer))
+                await output(self._process_result(buffer))
 
     def _add_item(self, item, buffer):
         if self.mapper is not None:
@@ -179,5 +179,5 @@ class Delay(Section):
                 now = trio.current_time()
                 if timestamp > now:
                     await trio.sleep(timestamp - now)
-                await output.send(item)
+                await output(item)
             nursery.cancel_scope.cancel()

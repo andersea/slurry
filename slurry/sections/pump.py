@@ -15,7 +15,7 @@ async def pump(section, input: Optional[AsyncIterable[Any]], output: trio.Memory
     """
     try:
         if isinstance(section, Section):
-            await section.pump(input, output)
+            await section.pump(input, output.send)
         elif isinstance(section, ThreadSection):
             await _thread_section_pump(section, input, output.send)
         elif isinstance(section, ProcessSection):
