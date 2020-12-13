@@ -35,7 +35,7 @@ async def test_early_tap_closure_section(autojump_clock):
 
         async def pump(self, input, output):
             for i in range(self.stop):
-                await output.send(i)
+                await output(i)
 
     for _ in range(100):
         async with Pipeline.create(

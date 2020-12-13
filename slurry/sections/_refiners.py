@@ -30,4 +30,4 @@ class Map(Section):
 
         async with aclosing(source) as aiter:
             async for item in aiter:
-                await output.send(self.func(item))
+                await output(self.func(item))
