@@ -2,8 +2,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional
 
-import trio
-
 class Section(ABC):
     """Each pipeline section takes inputs from an async iterable, processes it and sends it to an
     output.
