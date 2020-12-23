@@ -57,7 +57,7 @@ class Filter(Section):
         if input:
             source = input
         elif self.source:
-             source = self.source
+            source = self.source
         else:
             raise RuntimeError('No input provided.')
 
