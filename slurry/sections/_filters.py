@@ -33,7 +33,7 @@ class Skip(Section):
             for _ in range(self.count):
                 await aiter.__anext__()
             async for item in aiter:
-                await output.send(item)
+                await output(item)
 
 class Filter(Section):
     """Outputs items that passes a filter function.
@@ -57,14 +57,14 @@ class Filter(Section):
         if input:
             source = input
         elif self.source:
-             source = self.source
+            source = self.source
         else:
             raise RuntimeError('No input provided.')
 
         async with aclosing(source) as aiter:
             async for item in aiter:
                 if self.func(item):
-                    await output.send(item)
+                    await output(item)
 
 class Changes(Section):
     """Outputs items that are different from the last item output.
@@ -100,7 +100,7 @@ class Changes(Section):
             async for item in aiter:
                 if last is token or item != last:
                     last = item
-                    await output.send(item)
+                    await output(item)
 
 class RateLimit(Section):
     """Limits data rate of an input to a certain interval.
@@ -155,4 +155,4 @@ class RateLimit(Section):
                 then = timestamps.get(subject)
                 if then is None or now - then > self.interval:
                     timestamps[subject] = now
-                    await output.send(item)
+                    await output(item)

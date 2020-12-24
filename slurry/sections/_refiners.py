@@ -1,5 +1,5 @@
 """Sections for transforming an input into a different output."""
-from typing import Any, AsyncIterable, Optional
+from typing import Any, AsyncIterable, Optional, Union
 
 from async_generator import aclosing
 
@@ -15,7 +15,7 @@ class Map(Section):
     :param source: Source if used as a starting section.
     :type source: Optional[AsyncIterable[Any]]
     """
-    def __init__(self, func, source: Optional[AsyncIterable[Any]] = None):
+    def __init__(self, func, source: Optional[Union[AsyncIterable[Any], Section]] = None):
         super().__init__()
         self.func = func
         self.source = source
@@ -28,6 +28,11 @@ class Map(Section):
         else:
             raise RuntimeError('No input provided.')
 
-        async with aclosing(source) as aiter:
-            async for item in aiter:
-                await output.send(self.func(item))
+        if isinstance(source, Section):
+            async def _output(item):
+                await output(self.func(item))
+            await source.pump(None, _output)
+        else:
+            async with aclosing(source) as aiter:
+                async for item in aiter:
+                    await output(self.func(item))

@@ -1,8 +1,6 @@
 """ Abstract Base Classes for building pipeline sections. """
 from abc import ABC, abstractmethod
-from typing import Any, AsyncIterable, Callable, Iterable, Optional
-
-import trio
+from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional
 
 class Section(ABC):
     """Each pipeline section takes inputs from an async iterable, processes it and sends it to an
@@ -13,7 +11,7 @@ class Section(ABC):
     """
 
     @abstractmethod
-    async def pump(self, input: Optional[AsyncIterable[Any]], output: trio.MemorySendChannel):
+    async def pump(self, input: Optional[AsyncIterable[Any]], output: Callable[[Any], Awaitable[None]]):
         """The pump method must contain the logic that iterates the input, processes the indidual
         items, and feeds results to the output.
 
@@ -32,8 +30,8 @@ class Section(ABC):
         :param input: The input data feed. Will be ``None`` for the first ``Section``, as the first
             ``Section`` is expected to supply it's own input.
         :type input: Optional[AsyncIterable[Any]]
-        :param output: The output memory channel where results are sent.
-        :type output: trio.MemorySendChannel
+        :param output: An awaitable callable used to send output.
+        :type output: Callable[[Any], Awaitable[None]]
         """
 
 class ThreadSection(ABC):
@@ -59,7 +57,7 @@ class ThreadSection(ABC):
         :param input: The input data feed. Like with ordinary sections, this can be ``None`` if
             ``ThreadSection`` is the first section in the pipeline.
         :type input: Optional[Iterable[Any]]
-        :param output: The synchronous output send interface.
+        :param output: The callable used to send output.
         :type output: Callable[[Any], None]
         """
 
@@ -90,6 +88,6 @@ class ProcessSection(ABC):
         :param input: The input data feed. Like with ordinary sections, this can be ``None`` if
             ``ProcessSection`` is the first section in the pipeline.
         :type input: Optional[Iterable[Any]]
-        :param output: The synchronous output send interface.
+        :param output: The callable used to send output.
         :type output: Callable[[Any], None]
         """
