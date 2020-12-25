@@ -1,12 +1,12 @@
 """Pipeline sections for combining multiple inputs into a single output."""
 import builtins
 import itertools
-from typing import Any, AsyncIterable, Awaitable, Optional, Sequence, Union
+from typing import Any, AsyncIterable, Sequence
 
 import trio
 from async_generator import aclosing
 
-from .abc import Section, ThreadSection, ProcessSection, PipelineSection
+from .abc import Section
 from .weld import weld
 
 class Chain(Section):
@@ -27,7 +27,7 @@ class Chain(Section):
         ``'first'`` (default) \| ``'last'``.
     :type place_input: string
     """
-    def __init__(self, *sources: Sequence[PipelineSection], place_input='first'):
+    def __init__(self, *sources: Sequence["PipelineSection"], place_input='first'):
         super().__init__()
         self.sources = sources
         self.place_input = _validate_place_input(place_input)
@@ -60,7 +60,7 @@ class Merge(Section):
     :param sources: One or more async iterables or sections who's contents will be merged.
     :type sources: Sequence[PipelineSection]
     """
-    def __init__(self, *sources: Sequence[PipelineSection]):
+    def __init__(self, *sources: Sequence["PipelineSection"]):
         super().__init__()
         self.sources = sources
 
@@ -96,7 +96,7 @@ class Zip(Section):
         ``'first'`` (default) \| ``'last'``.
     :type place_input: string
     """
-    def __init__(self, *sources: Sequence[AsyncIterable[Any]], place_input='first'):
+    def __init__(self, *sources: Sequence["PipelineSection"], place_input='first'):
         super().__init__()
         self.sources = sources
         self.place_input = _validate_place_input(place_input)
@@ -165,7 +165,7 @@ class ZipLatest(Section):
         Defaults to ``False``
     :type monitor_input: bool
     """
-    def __init__(self, *sources: Sequence[AsyncIterable[Any]],
+    def __init__(self, *sources: Sequence["PipelineSection"],
                  partial=True,
                  default=None,
                  monitor=(),

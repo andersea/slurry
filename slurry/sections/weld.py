@@ -7,10 +7,10 @@ from typing import Any, AsyncIterable, Sequence
 
 import trio
 
-from .abc import Section, ThreadSection, ProcessSection, PipelineSection
+from .abc import Section, ThreadSection, ProcessSection
 from .pump import pump
 
-def weld(nursery, *sections: Sequence[PipelineSection]) -> AsyncIterable[Any]:
+def weld(nursery, *sections: Sequence["PipelineSection"]) -> AsyncIterable[Any]:
     """
     Connects the individual parts of a sequence of pipeline sections together and starts pumps for
     individual Sections. It returns an async iterable which yields results of the sequence.

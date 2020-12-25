@@ -15,7 +15,6 @@ from typing import AsyncContextManager, Sequence
 import trio
 from async_generator import aclosing, asynccontextmanager
 
-from .sections.abc import Section, ThreadSection, ProcessSection, PipelineSection
 from .sections.weld import weld
 from .tap import Tap
 
@@ -28,11 +27,11 @@ class Pipeline:
 
     Fields:
 
-    * ``sections``: The ``Sequence`` of pipeline sections contained in the pipeline.
+    * ``sections``: The sequence of pipeline sections contained in the pipeline.
     * ``nursery``: The :class:`trio.Nursery` that is executing the pipeline.
 
     """
-    def __init__(self, *sections: Sequence[PipelineSection],
+    def __init__(self, *sections: Sequence["PipelineSection"],
                  nursery: trio.Nursery,
                  enabled: trio.Event):
         self.sections = sections
@@ -42,7 +41,7 @@ class Pipeline:
 
     @classmethod
     @asynccontextmanager
-    async def create(cls, *sections: Sequence[PipelineSection]) -> AsyncContextManager["Pipeline"]:
+    async def create(cls, *sections: Sequence["PipelineSection"]) -> AsyncContextManager["Pipeline"]:
         """Creates a new pipeline context and adds the given section sequence to it.
 
         :param Sequence[PipelineSection] \*sections: One or more ``PipelineSections``.
@@ -58,21 +57,7 @@ class Pipeline:
         """Runs the pipeline."""
         await self._enabled.wait()
 
-        # if isinstance(self.sections[0], (Section, ThreadSection, ProcessSection)):
-        #     first_input = None
-        #     sections = self.sections
-        # else:
-        #     first_input = self.sections[0]
-        #     sections = self.sections[1:]
-
-        # channels = chain((first_input,), *(trio.open_memory_channel(0) for _ in sections))
-
         async with trio.open_nursery() as nursery:
-
-            # Start pumps
-            # for section in sections:
-            #     nursery.start_soon(pump, section, next(channels), next(channels))
-
             output = weld(nursery, *self.sections)
 
             # Output to taps
@@ -127,7 +112,7 @@ class Pipeline:
             self._enabled.set()
         return receive_channel
 
-    def extend(self, *sections: Sequence[PipelineSection], start: bool = False) -> "Pipeline":
+    def extend(self, *sections: Sequence["PipelineSection"], start: bool = False) -> "Pipeline":
         """Extend this pipeline into a new pipeline.
 
         :param Sequence[PipelineSection] \*sections: One or more pipeline sections.
