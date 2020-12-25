@@ -1,16 +1,16 @@
 """Pipeline sections for combining multiple inputs into a single output."""
 import builtins
 import itertools
-from typing import Any, AsyncIterable, Optional, Sequence, Union
+from typing import Any, AsyncIterable, Sequence
 
 import trio
 from async_generator import aclosing
 
-from .abc import Section, ThreadSection, ProcessSection
-from .pump import pump
+from .abc import Section
+from .weld import weld
 
 class Chain(Section):
-    """Chains asynchronous sequences.
+    """Chains output from one or more sources. Any valid ``PipelineSection`` is an allowed source.
 
     Outputs items from each source in turn, until it is exhausted. If a source never reaches the
     end, remaining sources will not be iterated.
@@ -21,13 +21,13 @@ class Chain(Section):
         By default, the input is added as the first source. If the input is added last instead
         of first, it will cause backpressure to be applied upstream.
 
-    :param sources: One or more async iterables that will be chained together.
-    :type sources: Sequence[AsyncIterable[Any]]
+    :param sources: One or more ``PipelineSection`` that will be chained together.
+    :type sources: Sequence[PipelineSection]
     :param place_input: Iteration priority of the pipeline input source. Options:
         ``'first'`` (default) \| ``'last'``.
     :type place_input: string
     """
-    def __init__(self, *sources: Sequence[AsyncIterable[Any]], place_input='first'):
+    def __init__(self, *sources: Sequence["PipelineSection"], place_input='first'):
         super().__init__()
         self.sources = sources
         self.place_input = _validate_place_input(place_input)
@@ -40,14 +40,14 @@ class Chain(Section):
                 sources = (input, *self.sources)
         else:
             sources = self.sources
-
-        for source in sources:
-            async with aclosing(source) as agen:
-                async for item in agen:
-                    await output(item)
+        async with trio.open_nursery() as nursery:
+            for source in sources:
+                async with aclosing(weld(nursery, source)) as agen:
+                    async for item in agen:
+                        await output(item)
 
 class Merge(Section):
-    """Merges asynchronous sequences or pipeline sections.
+    """Merges the outputs of multiple sources. Any valid ``PipelineSection`` is an allowed source.
 
     Sources are iterated in parallel and items are send from each source, as soon as
     they become available.
@@ -58,21 +58,17 @@ class Merge(Section):
     no input. Merge will take care of running the pump task for these sections.
 
     :param sources: One or more async iterables or sections who's contents will be merged.
-    :type sources: Sequence[Union[AsyncIterable[Any], Section]]
+    :type sources: Sequence[PipelineSection]
     """
-    def __init__(self, *sources: Sequence[Union[AsyncIterable[Any], Section]]):
+    def __init__(self, *sources: Sequence["PipelineSection"]):
         super().__init__()
         self.sources = sources
 
-    async def pump(self, input: Optional[AsyncIterable[Any]], output: trio.MemorySendChannel):
+    async def pump(self, input, output):
         async with trio.open_nursery() as nursery:
 
             async def pull_task(source):
-                if isinstance(source, (Section, ThreadSection, ProcessSection)):
-                    send_channel, receive_channel = trio.open_memory_channel(0)
-                    nursery.start_soon(pump, source, None, send_channel)
-                    source = receive_channel
-                async with aclosing(source) as aiter:
+                async with aclosing(weld(nursery, source)) as aiter:
                     async for item in aiter:
                         await output(item)
 
@@ -83,7 +79,7 @@ class Merge(Section):
                 nursery.start_soon(pull_task, source)
 
 class Zip(Section):
-    """Zip asynchronous sequences.
+    """Zips the output of multiple sources. Any valid ``PipelineSection`` is an allowed source.
 
     Sources are iterated in parallel and as soon as all sources have an item available, those
     items are output as a tuple.
@@ -94,13 +90,13 @@ class Zip(Section):
         If sources are out of sync, the fastest source will have to wait for the slowest, which
         will cause backpressure.
 
-    :param sources:  One or more async iterables, who's contents will be zipped.
-    :type sources: Sequence[AsyncIterable[Any]]
+    :param sources:  One or more ``PipelineSection``, who's contents will be zipped.
+    :type sources: Sequence[PipelineSection]
     :param place_input:  Position of the pipeline input source in the output tuple. Options:
         ``'first'`` (default) \| ``'last'``.
     :type place_input: string
     """
-    def __init__(self, *sources: Sequence[AsyncIterable[Any]], place_input='first'):
+    def __init__(self, *sources: Sequence["PipelineSection"], place_input='first'):
         super().__init__()
         self.sources = sources
         self.place_input = _validate_place_input(place_input)
@@ -114,37 +110,28 @@ class Zip(Section):
         else:
             sources = self.sources
 
-        results = [None for _ in sources]
-        results_available = 0
-        result_complete = trio.Event()
-        pull_next = trio.Condition()
+        async with trio.open_nursery() as weld_nursery:
+            sources = [weld(weld_nursery, source) for source in sources]
 
-        async with trio.open_nursery() as nursery:
-            async def pull_task(source, index):
-                nonlocal results_available
-                async with aclosing(source) as aiter:
-                    async for item in aiter:
-                        results[index] = item
-                        results_available += 1
-                        if results_available == len(results):
-                            result_complete.set()
-                        async with pull_next:
-                            await pull_next.wait()
-                nursery.cancel_scope.cancel()
-
-            for i, source in builtins.enumerate(sources):
-                nursery.start_soon(pull_task, source, i)
+            async def pull_task(source, index, results: list):
+                try:
+                    results.append((index, await source.__anext__()))
+                except StopAsyncIteration:
+                    weld_nursery.cancel_scope.cancel()
 
             while True:
-                await result_complete.wait()
-                await output(tuple(results))
-                async with pull_next:
-                    results_available = 0
-                    result_complete = trio.Event()
-                    pull_next.notify_all()
+                results = []
+                async with trio.open_nursery() as pull_nursery:
+                    for i, source in builtins.enumerate(sources):
+                        pull_nursery.start_soon(pull_task, source, i, results)
+                await output(tuple(result for i, result in sorted(results, key=lambda packet: packet[0])))
+
+        for source in sources:
+            await source.aclose()
 
 class ZipLatest(Section):
-    """Zips asynchronous sequences and outputs a result on every received item.
+    """Zips one or more sources and outputs a result on every received item. Any valid
+    ``PipelineSection`` is an allowed source.
 
     Sources are iterated in parallel and a tuple is output each time a result is ready
     on any source. The tuple values will be the last received value from each source.
@@ -178,7 +165,7 @@ class ZipLatest(Section):
         Defaults to ``False``
     :type monitor_input: bool
     """
-    def __init__(self, *sources: Sequence[AsyncIterable[Any]],
+    def __init__(self, *sources: Sequence["PipelineSection"],
                  partial=True,
                  default=None,
                  monitor=(),
@@ -218,7 +205,7 @@ class ZipLatest(Section):
         async with trio.open_nursery() as nursery:
 
             async def pull_task(index, source, monitor=False):
-                async with aclosing(source) as aiter:
+                async with aclosing(weld(nursery, source)) as aiter:
                     async for item in aiter:
                         results[index] = item
                         ready[index] = True

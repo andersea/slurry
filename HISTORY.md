@@ -1,5 +1,10 @@
 # History
 
+## v0.9.0
+
+* New PipelineSection concept. The pipeline section generalizes the types of input that is allowed in pipelines and select sections that take input. PipelineSections can either be asynchronous iterables, Sections or Tuples representing sequences of pipeline sections. Using tuples of pipeline sections, it possible to compose nested pipelines to any depth.
+* Changed api. Section pumps now take a callable that returns an awaitable as output, instead of an explicit trio.MemorySendChannel. This brings the api in line with synchronous sections, but is obviously a breaking change.
+
 ## v0.8.0
 
 * New ProcessSection abc. Code can now be spawned in a seperate python process, making true concurrency possible!

@@ -9,17 +9,14 @@ The pipeline can also be extended dynamically with new pipeline sections with
 :meth:`Pipeline.extend`, adding additional processing.
 """
 
-from itertools import chain
 import math
 from typing import AsyncContextManager, Sequence
 
 import trio
 from async_generator import aclosing, asynccontextmanager
 
-from .sections.abc import Section, ThreadSection, ProcessSection
-from .sections.pump import pump
+from .sections.weld import weld
 from .tap import Tap
-
 
 class Pipeline:
     """The main Slurry ``Pipeline`` class.
@@ -30,11 +27,11 @@ class Pipeline:
 
     Fields:
 
-    * ``sections``: The ``Sequence`` of pipeline sections contained in the pipeline.
+    * ``sections``: The sequence of pipeline sections contained in the pipeline.
     * ``nursery``: The :class:`trio.Nursery` that is executing the pipeline.
 
     """
-    def __init__(self, *sections: Sequence[Section],
+    def __init__(self, *sections: Sequence["PipelineSection"],
                  nursery: trio.Nursery,
                  enabled: trio.Event):
         self.sections = sections
@@ -44,13 +41,11 @@ class Pipeline:
 
     @classmethod
     @asynccontextmanager
-    async def create(cls, *sections: Sequence[Section]) -> AsyncContextManager["Pipeline"]:
+    async def create(cls, *sections: Sequence["PipelineSection"]) -> AsyncContextManager["Pipeline"]:
         """Creates a new pipeline context and adds the given section sequence to it.
 
-        :param sections: One or more pipeline sections.
-            It is valid to supply an async iterable instead of a :class:`Section` as *first*
-            section.
-        :type sections: Sequence[slurry.abc.Section]
+        :param Sequence[PipelineSection] \*sections: One or more ``PipelineSections``.
+          See :mod:`slurry.sections.abc`.
         """
         async with trio.open_nursery() as nursery:
             pipeline = cls(*sections, nursery=nursery, enabled=trio.Event())
@@ -62,23 +57,11 @@ class Pipeline:
         """Runs the pipeline."""
         await self._enabled.wait()
 
-        if isinstance(self.sections[0], (Section, ThreadSection, ProcessSection)):
-            first_input = None
-            sections = self.sections
-        else:
-            first_input = self.sections[0]
-            sections = self.sections[1:]
-
-        channels = chain((first_input,), *(trio.open_memory_channel(0) for _ in sections))
-
         async with trio.open_nursery() as nursery:
-
-            # Start pumps
-            for section in sections:
-                nursery.start_soon(pump, section, next(channels), next(channels))
+            output = weld(nursery, *self.sections)
 
             # Output to taps
-            async with aclosing(next(channels)) as aiter:
+            async with aclosing(output) as aiter:
                 async for item in aiter:
                     self._taps = set(filter(lambda tap: not tap.closed, self._taps))
                     if not self._taps:
@@ -129,13 +112,11 @@ class Pipeline:
             self._enabled.set()
         return receive_channel
 
-    def extend(self, *sections: Sequence[Section], start: bool = False) -> "Pipeline":
+    def extend(self, *sections: Sequence["PipelineSection"], start: bool = False) -> "Pipeline":
         """Extend this pipeline into a new pipeline.
 
-        :param sections: One or more pipeline sections.
-        :type sections: Sequence[Section]
-        :param start: Start processing when adding this extension. (default: ``False``)
-        :type start: bool
+        :param Sequence[PipelineSection] \*sections: One or more pipeline sections.
+        :param bool start: Start processing when adding this extension. (default: ``False``)
         """
         pipeline = Pipeline(
             self.tap(start=start),
