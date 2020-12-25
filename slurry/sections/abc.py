@@ -1,6 +1,6 @@
 """ Abstract Base Classes for building pipeline sections. """
 from abc import ABC, abstractmethod
-from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional
+from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional, Sequence, Tuple, TypeVar
 
 class Section(ABC):
     """Each pipeline section takes inputs from an async iterable, processes it and sends it to an
@@ -91,3 +91,11 @@ class ProcessSection(ABC):
         :param output: The callable used to send output.
         :type output: Callable[[Any], None]
         """
+
+PipelineSection = TypeVar(
+    'PipelineSection',
+    AsyncIterable[Any],
+    Section,
+    ThreadSection,
+    ProcessSection,
+    Tuple["PipelineSection", ...])
