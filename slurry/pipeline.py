@@ -17,7 +17,7 @@ import trio
 from async_generator import aclosing, asynccontextmanager
 
 from .sections.abc import Section, ThreadSection, ProcessSection
-from .sections.pump import pump
+from .sections.weld import weld
 from .tap import Tap
 
 
@@ -62,23 +62,25 @@ class Pipeline:
         """Runs the pipeline."""
         await self._enabled.wait()
 
-        if isinstance(self.sections[0], (Section, ThreadSection, ProcessSection)):
-            first_input = None
-            sections = self.sections
-        else:
-            first_input = self.sections[0]
-            sections = self.sections[1:]
+        # if isinstance(self.sections[0], (Section, ThreadSection, ProcessSection)):
+        #     first_input = None
+        #     sections = self.sections
+        # else:
+        #     first_input = self.sections[0]
+        #     sections = self.sections[1:]
 
-        channels = chain((first_input,), *(trio.open_memory_channel(0) for _ in sections))
+        # channels = chain((first_input,), *(trio.open_memory_channel(0) for _ in sections))
 
         async with trio.open_nursery() as nursery:
 
             # Start pumps
-            for section in sections:
-                nursery.start_soon(pump, section, next(channels), next(channels))
+            # for section in sections:
+            #     nursery.start_soon(pump, section, next(channels), next(channels))
+
+            output = weld(nursery, *self.sections)
 
             # Output to taps
-            async with aclosing(next(channels)) as aiter:
+            async with aclosing(output) as aiter:
                 async for item in aiter:
                     self._taps = set(filter(lambda tap: not tap.closed, self._taps))
                     if not self._taps:
