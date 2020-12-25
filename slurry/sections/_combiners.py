@@ -91,7 +91,7 @@ class Zip(Section):
         will cause backpressure.
 
     :param sources:  One or more ``PipelineSection``, who's contents will be zipped.
-    :type sources: Sequence[AsyncIterable[Any]]
+    :type sources: Sequence[PipelineSection]
     :param place_input:  Position of the pipeline input source in the output tuple. Options:
         ``'first'`` (default) \| ``'last'``.
     :type place_input: string
@@ -110,34 +110,24 @@ class Zip(Section):
         else:
             sources = self.sources
 
-        results = [None for _ in sources]
-        results_available = 0
-        result_complete = trio.Event()
-        pull_next = trio.Condition()
+        async with trio.open_nursery() as weld_nursery:
+            sources = [weld(weld_nursery, source) for source in sources]
 
-        async with trio.open_nursery() as nursery:
-            async def pull_task(source, index):
-                nonlocal results_available
-                async with aclosing(weld(nursery, source)) as aiter:
-                    async for item in aiter:
-                        results[index] = item
-                        results_available += 1
-                        if results_available == len(results):
-                            result_complete.set()
-                        async with pull_next:
-                            await pull_next.wait()
-                nursery.cancel_scope.cancel()
-
-            for i, source in builtins.enumerate(sources):
-                nursery.start_soon(pull_task, source, i)
+            async def pull_task(source, index, results: list):
+                try:
+                    results.append((index, await source.__anext__()))
+                except StopAsyncIteration:
+                    weld_nursery.cancel_scope.cancel()
 
             while True:
-                await result_complete.wait()
-                await output(tuple(results))
-                async with pull_next:
-                    results_available = 0
-                    result_complete = trio.Event()
-                    pull_next.notify_all()
+                results = []
+                async with trio.open_nursery() as pull_nursery:
+                    for i, source in builtins.enumerate(sources):
+                        pull_nursery.start_soon(pull_task, source, i, results)
+                await output(tuple(result for i, result in sorted(results, key=lambda packet: packet[0])))
+
+        for source in sources:
+            await source.aclose()
 
 class ZipLatest(Section):
     """Zips one or more sources and outputs a result on every received item. Any valid
