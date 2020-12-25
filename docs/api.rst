@@ -43,6 +43,11 @@ ProcessSection
 .. autoclass:: ProcessSection
   :members:
 
+Weld
+----
+.. automodule:: slurry.sections.weld
+  :members:
+
 Pump
 ----
 .. automodule:: slurry.sections.pump

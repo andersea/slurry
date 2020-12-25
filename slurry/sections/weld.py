@@ -1,5 +1,5 @@
 """
-The weld module implements the weld function that connects Sections together and
+The weld module implements the weld function that connects pipeline sections together and
 returns the async iterable output.
 """
 
@@ -12,11 +12,13 @@ from .pump import pump
 
 def weld(nursery, *sections: Sequence[PipelineSection]) -> AsyncIterable[Any]:
     """
-    Connects the individual parts of a ``SectionSequence`` together and starts pumps for
+    Connects the individual parts of a sequence of pipeline sections together and starts pumps for
     individual Sections. It returns an async iterable which yields results of the sequence.
 
-    :param :class:`trio.Nursery` nursery: The nursery that runs individual pipeline section pumps.
-    :param SectionSequence sections: A sequence of pipeline sections.
+    :param nursery: The nursery that runs individual pipeline section pumps.
+    :type nursery: :class:`trio.Nursery`
+    :param \*sections: A sequence of pipeline sections.
+    :type \*sections: Sequence[PipelineSection]
     """
     section_input = None
     output = None
