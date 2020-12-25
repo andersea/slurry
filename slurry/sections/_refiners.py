@@ -8,12 +8,13 @@ from .abc import Section
 class Map(Section):
     """Maps over an asynchronous sequence.
 
-    Map can be used as a starting section, if a source is provided.
+    Map can be used as a starting section, if a source is provided. Both AsyncIterable and Section
+    sources are supported.
 
     :param func: Mapping function.
     :type func: Callable[[Any], Any]
     :param source: Source if used as a starting section.
-    :type source: Optional[AsyncIterable[Any]]
+    :type source: Optional[Union[AsyncIterable[Any], Section]]
     """
     def __init__(self, func, source: Optional[Union[AsyncIterable[Any], Section]] = None):
         super().__init__()
