@@ -1,16 +1,27 @@
-from itertools import chain
-from typing import Any, AsyncIterable, Sequence, Union
+"""
+The weld module implements the weld function that connects Sections together and
+returns the async iterable output.
+"""
+
+from typing import Any, AsyncIterable, Sequence, Tuple, Union, NewType
 
 import trio
 
 from .abc import Section, ThreadSection, ProcessSection
 from .pump import pump
 
-def weld(
-    nursery,
-    *sections: Sequence[Union[AsyncIterable[Any], Section, ThreadSection, ProcessSection]]
-    ) -> AsyncIterable[Any]:
+SectionSequence = NewType(
+    'SectionSequence',
+    Sequence[Union[AsyncIterable[Any], Section, ThreadSection, ProcessSection, Tuple]])
 
+def weld(nursery, *sections: SectionSequence) -> AsyncIterable[Any]:
+    """
+    Connects the individual parts of a ``SectionSequence`` together and starts pumps for
+    individual Sections. It returns an async iterable which yields results of the sequence.
+
+    :param :class:`trio.Nursery` nursery: The nursery that runs individual pipeline section pumps.
+    :param SectionSequence sections: A sequence of pipeline sections.
+    """
     section_input = None
     output = None
     for section in sections:
