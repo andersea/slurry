@@ -3,12 +3,11 @@ The weld module implements the weld function that connects pipeline sections tog
 returns the async iterable output.
 """
 
-from typing import Any, AsyncIterable, Sequence
+from typing import Any, AsyncIterable, Optional, Sequence
 
 import trio
 
-from .abc import Section, ThreadSection, ProcessSection
-from .pump import pump
+from .abc import Section
 
 def weld(nursery, *sections: Sequence["PipelineSection"]) -> AsyncIterable[Any]:
     """
@@ -20,10 +19,20 @@ def weld(nursery, *sections: Sequence["PipelineSection"]) -> AsyncIterable[Any]:
     :param \*sections: A sequence of pipeline sections.
     :type \*sections: Sequence[PipelineSection]
     """
+
+    async def pump(section, input: Optional[AsyncIterable[Any]], output: trio.MemorySendChannel):
+        try:
+            await section.pump(input, output.send)
+        except trio.BrokenResourceError:
+            pass
+        if input:
+            await input.aclose()
+        await output.aclose()
+
     section_input = None
     output = None
     for section in sections:
-        if isinstance(section, (Section, ThreadSection, ProcessSection)):
+        if isinstance(section, Section):
             section_output, output = trio.open_memory_channel(0)
             nursery.start_soon(pump, section, section_input, section_output)
         elif isinstance(section, tuple):

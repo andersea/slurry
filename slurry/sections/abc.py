@@ -7,18 +7,26 @@ class Section(ABC):
     output.
 
     A section must implement the ``pump`` abstract method, which will be scheduled to run as a task
-    by the pipeline.
+    by the pipeline. The pump method serves as an underlying machinery for pulling and pushing
+    data through the section.
+
+    In addition, sections should implement a refine method which performs the actual processing
+    of each received item.
+
+    The api of the pump method is defined by this abc and cannot be changed in derived sections,
+    whereas the api of the refine method is implementation dependent.
     """
 
     @abstractmethod
     async def pump(self, input: Optional[AsyncIterable[Any]], output: Callable[[Any], Awaitable[None]]):
-        """The pump method must contain the logic that iterates the input, processes the indidual
-        items, and feeds results to the output.
+        """The pump method contains the machinery that takes input from previous sections, or
+        any asynchronous iterable, processes it and pushes it to the output.
 
-        By default, the pipeline tries to manage the input and output resource lifetime. Normally
-        you don't have to worry about closing the input and output after use. The exception is, if
-        your custom section adds additional input sources, or provides it's own input. In this case
-        the section must take care of closing the input after use.
+        Each subclass of section must implement a way to process each received item. This should be
+        done by either implementing an asynchronous or synchronous refine method. Slurry defines two
+        standard apis for implementing a refine method, an asynchronous one as defined by
+        :class:`AsyncSection`, and a synchronous as defined by :class:`SyncSection`. It is not a
+        requirement that custom sections follow this api. Only the pump api is locked.
 
         .. note::
             The receiving end of the output can be closed by the pipeline or by the downstream
@@ -27,6 +35,10 @@ class Section(ABC):
             to handle it for you, but if you need to do some kind of cleanup, like closing network
             connections for instance, you may want to handle this exception yourself.
 
+        .. note::
+            If this section is the first section of a pipeline, the input will be ``None``. In this
+            case, the section is expected to produce output independently.
+
         :param input: The input data feed. Will be ``None`` for the first ``Section``, as the first
             ``Section`` is expected to supply it's own input.
         :type input: Optional[AsyncIterable[Any]]
@@ -34,59 +46,52 @@ class Section(ABC):
         :type output: Callable[[Any], Awaitable[None]]
         """
 
-class ThreadSection(ABC):
-    """ThreadSection defines a section interface which uses a synchronous pump. The pump method
-    runs in a background thread and will not block the trio event loop."""
+class AsyncSection(Section):
+    """AsyncSection defines an abc for sections that are designed to run in an async event loop."""
+
     @abstractmethod
-    def pump(self, input: Optional[Iterable[Any]], output: Callable[[Any], None]):
-        """
-        The ``ThreadSection`` pump method is designed to have an api that is as close to the
-        async api as possible. The input is a synchronous iterable instead of an async iterable,
-        and the output is a synchronous callable, similar to a ``Queue.put`` method.
+    async def refine(self, input: Optional[AsyncIterable[Any]], output: Callable[[Any], Awaitable[None]]):
+        """The async section refine method must contain the logic that iterates the input, processes
+        the indidual items, and feeds results to the output.
 
-        Ordinary async sections and synchronous threaded sections can be freely mixed and matched
-        in the pipeline. The pipeline will automatically detect the section type, as long as you
-        inherit from this abc, and it will take care of launching the pump function in a thread
-        and bridge the input and outputs between trio and sync.
+        By default, the pipeline tries to manage the input and output resource lifetime. Normally
+        you don't have to worry about closing the input and output after use. The exception is, if
+        your custom section adds additional input sources, or provides it's own input. In this case
+        the section must take care of closing the input after use.
 
-        .. note::
-            Trio has a limit on how many threads can run simultaneously. See the
-            `trio documentation <https://trio.readthedocs.io/en/stable/reference-core.html#trio-s-philosophy-about-managing-worker-threads>`_
-            for more information.
-
-        :param input: The input data feed. Like with ordinary sections, this can be ``None`` if
-            ``ThreadSection`` is the first section in the pipeline.
-        :type input: Optional[Iterable[Any]]
-        :param output: The callable used to send output.
-        :type output: Callable[[Any], None]
+        :param input: The input data feed. Will be ``None`` for the first ``Section``, as the first
+            ``Section`` is expected to supply it's own input.
+        :type input: Optional[AsyncIterable[Any]]
+        :param output: An awaitable callable used to send output.
+        :type output: Callable[[Any], Awaitable[None]]
         """
 
-class ProcessSection(ABC):
-    """ProcessSection defines a section interface with a synchronous pump method that
-    runs in a separate process. Slurry makes use of the python
-    `multiprocessing <https://docs.python.org/3/library/multiprocessing.html>`_ module
-    to spawn the process.
+class SyncSection(Section):
+    """Sync defines an abc for sections that runs synchronous refiners. Implementations
+    of ``SyncSection`` should be carefully designed so as to not block the underlying
+    asynchronous pipeline event loop.
 
-    .. note::
-        ProcessSection implementations must be `pickleable
-        <https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled>`_.
+    Async sections and synchronous sections can be freely mixed and matched in the pipeline.
     """
 
     @abstractmethod
-    def pump(self, input: Optional[Iterable[Any]], output: Callable[[Any], None]):
-        """
-        The ``ProcessSection`` pump method works similar to the threaded version, however
-        since communication between processes is not as simple as it is between threads,
-        that are directly able to share memory with each other, there are some restrictions
-        to be aware of.
+    def refine(self, input: Optional[Iterable[Any]], output: Callable[[Any], None]):
+        """The ``SyncSection`` refine method is intended to run normal synchronous python
+        code, including code that can block for IO for an any amount of time. Implementations
+        of ``SyncSection`` should take care to design pump method in such a way, that blocking
+        happens transparently to the parent async event loop.
 
-        * Data that is to be sent to the input or transmitted on the output must be `pickleable
-          <https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled>`_.
-        * Since ``ProcessSection`` uses unbounded queues to transfer data behind the scenes, they
-          are unable to provide or receive backpressure.
+        The refine method is designed to have an api that is as close to the async api as
+        possible. The input is a synchronous iterable instead of an async iterable, and the
+        output is a synchronous callable, similar to a ``Queue.put`` method.
+
+        .. note::
+            Slurry includes two implementations of ``SyncSection``. ``ThreadSection``, which runs
+            the refine function in a thread, and ``ProcessSection`` which spawns an independent
+            process that runs the refine method.
 
         :param input: The input data feed. Like with ordinary sections, this can be ``None`` if
-            ``ProcessSection`` is the first section in the pipeline.
+            ``SyncSection`` is the first section in the pipeline.
         :type input: Optional[Iterable[Any]]
         :param output: The callable used to send output.
         :type output: Callable[[Any], None]
