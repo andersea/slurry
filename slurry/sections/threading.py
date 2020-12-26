@@ -9,7 +9,10 @@ from .abc import SyncSection
 class ThreadSection(SyncSection):
     """ThreadSection defines a section interface which uses a synchronous refine method.
     The refine method runs in a background thread and will not block the underlying
-    event loop."""
+    event loop.
+
+    See :class:`slurry.sections.abc.SyncSection` for more information.
+    """
 
     async def pump(self,
                    input: AsyncIterable[Any],

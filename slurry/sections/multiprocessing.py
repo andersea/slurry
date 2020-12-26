@@ -16,6 +16,8 @@ class ProcessSection(SyncSection):
     .. note::
         ProcessSection implementations must be `pickleable
         <https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled>`_.
+
+    See :class:`slurry.sections.abc.SyncSection` for more information.
     """
 
     async def pump(self, input: AsyncIterable[Any], output: Callable[[Any], Awaitable[None]]):

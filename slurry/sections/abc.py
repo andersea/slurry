@@ -78,7 +78,7 @@ class SyncSection(Section):
     def refine(self, input: Optional[Iterable[Any]], output: Callable[[Any], None]):
         """The ``SyncSection`` refine method is intended to run normal synchronous python
         code, including code that can block for IO for an any amount of time. Implementations
-        of ``SyncSection`` should take care to design pump method in such a way, that blocking
+        of ``SyncSection`` should take care to design a pump method in such a way, that blocking
         happens transparently to the parent async event loop.
 
         The refine method is designed to have an api that is as close to the async api as
@@ -86,9 +86,10 @@ class SyncSection(Section):
         output is a synchronous callable, similar to a ``Queue.put`` method.
 
         .. note::
-            Slurry includes two implementations of ``SyncSection``. ``ThreadSection``, which runs
-            the refine function in a thread, and ``ProcessSection`` which spawns an independent
-            process that runs the refine method.
+            Slurry includes two implementations of ``SyncSection``.
+            :class:`slurry.sections.threading.ThreadSection`, which runs the refine function in
+            a background thread, and :class:`slurry.sections.multiprocessing.ProcessSection`
+            which spawns an independent process that runs the refine method.
 
         :param input: The input data feed. Like with ordinary sections, this can be ``None`` if
             ``SyncSection`` is the first section in the pipeline.
