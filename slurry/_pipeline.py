@@ -16,7 +16,7 @@ import trio
 from async_generator import aclosing, asynccontextmanager
 
 from .sections.weld import weld
-from .tap import Tap
+from ._tap import Tap
 
 class Pipeline:
     """The main Slurry ``Pipeline`` class.
