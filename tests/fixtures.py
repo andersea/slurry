@@ -6,7 +6,8 @@ from typing import Any, Callable, Iterable
 
 import trio
 
-from slurry.sections.abc import ThreadSection, ProcessSection
+from slurry.sections.threading import ThreadSection
+from slurry.sections.multiprocessing import ProcessSection
 
 async def produce_increasing_integers(interval, *, max=3, delay=0):
     await trio.sleep(delay)
@@ -53,7 +54,7 @@ class SyncSquares(ThreadSection):
     def __init__(self, raise_after=math.inf) -> None:
         self.raise_after = raise_after
 
-    def pump(self, input, output):
+    def refine(self, input, output):
         for i, j in enumerate(input):
             output(j*j)
             if i == self.raise_after - 1:
@@ -63,7 +64,7 @@ class SimpleProcessSection(ProcessSection):
     def __init__(self, value) -> None:
         self.value = value
 
-    def pump(self, input, output):
+    def refine(self, input, output):
         output(self.value)
 
 class FibonacciSection(ProcessSection):
@@ -76,6 +77,6 @@ class FibonacciSection(ProcessSection):
         else:
             return self.fibonacci(i-1) + self.fibonacci(i-2)
 
-    def pump(self, input: Iterable[Any], output: Callable[[Any], None]):
+    def refine(self, input: Iterable[Any], output: Callable[[Any], None]):
         for i in range(self.i):
             output(self.fibonacci(i))

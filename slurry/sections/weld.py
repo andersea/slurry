@@ -1,14 +1,32 @@
 """
-The weld module implements the weld function that connects pipeline sections together and
+The weld module implements the ``weld`` function that connects pipeline sections together and
 returns the async iterable output.
+
+The main :class:`slurry.pipeline.Pipeline` class uses the ``weld`` function to compose the sequence of
+PipelineSections and return an output. Similarly, the combiner sections in the
+:mod:`slurry.sections._combiners` module use the ``weld`` function to support defining
+sub-pipelines as input sources.
+
+PipelineSection
+^^^^^^^^^^^^^^^
+
+A ``PipelineSection`` is any object that is valid input to the ``weld`` function. This currently
+includes the following types:
+
+* ``AsyncIterable[Any]`` - Async iterables are valid only as the very first ``PipelineSection``. Subsequent
+  sections will use this async iterable as input source. Placing an ``AsyncIterable`` into the middle of
+  of a sequence of pipeline sections, will cause a ``ValueError``.
+* A :class:`Section` or any class derived from :class:`Section`.
+* ``Tuple[PipelineSection, ...]`` - Pipeline sections can be nested to any level by supplying a tuple
+  containing one or more PipelineSections. Output from upstream sections are automatically used as input
+  to the nested sequence of pipeline sections.
 """
 
-from typing import Any, AsyncIterable, Sequence
+from typing import Any, AsyncIterable, Optional, Sequence
 
 import trio
 
-from .abc import Section, ThreadSection, ProcessSection
-from .pump import pump
+from .abc import Section
 
 def weld(nursery, *sections: Sequence["PipelineSection"]) -> AsyncIterable[Any]:
     """
@@ -20,10 +38,20 @@ def weld(nursery, *sections: Sequence["PipelineSection"]) -> AsyncIterable[Any]:
     :param \*sections: A sequence of pipeline sections.
     :type \*sections: Sequence[PipelineSection]
     """
+
+    async def pump(section, input: Optional[AsyncIterable[Any]], output: trio.MemorySendChannel):
+        try:
+            await section.pump(input, output.send)
+        except trio.BrokenResourceError:
+            pass
+        if input:
+            await input.aclose()
+        await output.aclose()
+
     section_input = None
     output = None
     for section in sections:
-        if isinstance(section, (Section, ThreadSection, ProcessSection)):
+        if isinstance(section, Section):
             section_output, output = trio.open_memory_channel(0)
             nursery.start_soon(pump, section, section_input, section_output)
         elif isinstance(section, tuple):
