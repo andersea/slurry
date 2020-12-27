@@ -6,9 +6,9 @@ from typing import Any, AsyncIterable, Callable, Optional, Sequence
 import trio
 from async_generator import aclosing
 
-from .abc import Section
+from ..environments import TrioSection
 
-class Window(Section):
+class Window(TrioSection):
     """Window buffer with size and age limits.
 
     ``Window`` iterates an asynchronous sequence and stores each received item in a
@@ -41,7 +41,7 @@ class Window(Section):
         self.max_age = max_age
         self.min_size = min_size
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         if input:
             source = input
         elif self.source:
@@ -60,7 +60,7 @@ class Window(Section):
                 if len(buf) >= self.min_size:
                     await output(tuple(i[0] for i in buf))
 
-class Group(Section):
+class Group(TrioSection):
     """Groups received items by time based interval.
 
     Group awaits an item to arrive from source, adds it to a buffer and sets a timer based on
@@ -100,7 +100,7 @@ class Group(Section):
         self.mapper = mapper
         self.reducer = reducer
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         async with trio.open_nursery() as nursery:
             if input:
                 source = input
@@ -142,7 +142,7 @@ class Group(Section):
             return self.reducer(buffer)
         return tuple(buffer)
 
-class Delay(Section):
+class Delay(TrioSection):
     """Delays transmission of each item received by an interval.
 
     Received items are temporarily stored in an unbounded queue, along with a timestamp, using
@@ -159,7 +159,7 @@ class Delay(Section):
         self.source = source
         self.interval = interval
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         if input:
             source = input
         elif self.source:

@@ -5,7 +5,7 @@ from typing import Any, AsyncIterable, Awaitable, Callable
 
 import trio
 
-from .abc import SyncSection
+from ..sections.abc import SyncSection
 
 class ProcessSection(SyncSection):
     """ProcessSection defines a section interface with a synchronous refine method that

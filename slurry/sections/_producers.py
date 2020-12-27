@@ -2,9 +2,9 @@
 import trio
 from async_generator import aclosing
 
-from .abc import Section
+from ..environments import TrioSection
 
-class Repeat(Section):
+class Repeat(TrioSection):
     """Yields a single item repeatedly at regular intervals.
 
     If used as a middle section, the input can be used to set the value that is sent. When
@@ -28,7 +28,7 @@ class Repeat(Section):
             self.has_default = True
             self.default = kwargs['default']
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         if input is None and not self.has_default:
             # pylint: disable=line-too-long
             raise RuntimeError('If Repeat is used as first section,  default value must be provided.')

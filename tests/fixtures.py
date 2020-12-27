@@ -6,8 +6,7 @@ from typing import Any, Callable, Iterable
 
 import trio
 
-from slurry.sections.threading import ThreadSection
-from slurry.sections.multiprocessing import ProcessSection
+from slurry.environments import ThreadSection, ProcessSection
 
 async def produce_increasing_integers(interval, *, max=3, delay=0):
     await trio.sleep(delay)

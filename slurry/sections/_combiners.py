@@ -6,10 +6,10 @@ from typing import Any, AsyncIterable, Sequence
 import trio
 from async_generator import aclosing
 
-from .abc import Section
+from ..environments import TrioSection
 from .weld import weld
 
-class Chain(Section):
+class Chain(TrioSection):
     """Chains output from one or more sources. Any valid ``PipelineSection`` is an allowed source.
 
     Outputs items from each source in turn, until it is exhausted. If a source never reaches the
@@ -32,7 +32,7 @@ class Chain(Section):
         self.sources = sources
         self.place_input = _validate_place_input(place_input)
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         if input:
             if self.place_input == 'last':
                 sources = (*self.sources, input)
@@ -46,7 +46,7 @@ class Chain(Section):
                     async for item in agen:
                         await output(item)
 
-class Merge(Section):
+class Merge(TrioSection):
     """Merges the outputs of multiple sources. Any valid ``PipelineSection`` is an allowed source.
 
     Sources are iterated in parallel and items are send from each source, as soon as
@@ -64,7 +64,7 @@ class Merge(Section):
         super().__init__()
         self.sources = sources
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         async with trio.open_nursery() as nursery:
 
             async def pull_task(source):
@@ -78,7 +78,7 @@ class Merge(Section):
             for source in self.sources:
                 nursery.start_soon(pull_task, source)
 
-class Zip(Section):
+class Zip(TrioSection):
     """Zips the output of multiple sources. Any valid ``PipelineSection`` is an allowed source.
 
     Sources are iterated in parallel and as soon as all sources have an item available, those
@@ -101,7 +101,7 @@ class Zip(Section):
         self.sources = sources
         self.place_input = _validate_place_input(place_input)
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         if input:
             if self.place_input == 'last':
                 sources = (*self.sources, input)
@@ -129,7 +129,7 @@ class Zip(Section):
         for source in sources:
             await source.aclose()
 
-class ZipLatest(Section):
+class ZipLatest(TrioSection):
     """Zips one or more sources and outputs a result on every received item. Any valid
     ``PipelineSection`` is an allowed source.
 
@@ -179,7 +179,7 @@ class ZipLatest(Section):
         self.place_input = _validate_place_input(place_input)
         self.monitor_input = monitor_input
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         sources = self.sources
         try:
             iter(self.monitor)

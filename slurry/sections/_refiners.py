@@ -3,9 +3,9 @@ from typing import Any, AsyncIterable, Optional
 
 from async_generator import aclosing
 
-from .abc import Section
+from ..environments import TrioSection
 
-class Map(Section):
+class Map(TrioSection):
     """Maps over an asynchronous sequence.
 
     Map can be used as a starting section, if a source is provided.
@@ -16,11 +16,10 @@ class Map(Section):
     :type source: Optional[AsyncIterable[Any]]
     """
     def __init__(self, func, source: Optional[AsyncIterable[Any]] = None):
-        super().__init__()
         self.func = func
         self.source = source
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         if input:
             source = input
         elif self.source:

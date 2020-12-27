@@ -4,9 +4,9 @@ from typing import Any, AsyncIterable, Callable, Hashable, Optional, Union
 from async_generator import aclosing
 import trio
 
-from .abc import Section
+from ..environments import TrioSection
 
-class Skip(Section):
+class Skip(TrioSection):
     """Skips the first ``count`` items in an asynchronous sequence.
 
     Skip can be used as a starting section if a source is given.
@@ -21,7 +21,7 @@ class Skip(Section):
         self.count = count
         self.source = source
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         if input:
             source = input
         elif self.source:
@@ -35,7 +35,7 @@ class Skip(Section):
             async for item in aiter:
                 await output(item)
 
-class Filter(Section):
+class Filter(TrioSection):
     """Outputs items that passes a filter function.
 
     The filter function must take an item. If the return value evaluates as true, the item is sent,
@@ -53,7 +53,7 @@ class Filter(Section):
         self.func = func
         self.source = source
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         if input:
             source = input
         elif self.source:
@@ -66,7 +66,7 @@ class Filter(Section):
                 if self.func(item):
                     await output(item)
 
-class Changes(Section):
+class Changes(TrioSection):
     """Outputs items that are different from the last item output.
 
     The generator stores a reference to the last outputted item. Whenever a new item arrives, it is
@@ -86,7 +86,7 @@ class Changes(Section):
         super().__init__()
         self.source = source
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         if input:
             source = input
         elif self.source:
@@ -102,7 +102,7 @@ class Changes(Section):
                     last = item
                     await output(item)
 
-class RateLimit(Section):
+class RateLimit(TrioSection):
     """Limits data rate of an input to a certain interval.
 
     The first item received is transmitted and triggers a timer. Any other items received while
@@ -132,7 +132,7 @@ class RateLimit(Section):
         self.interval = interval
         self.subject = subject
 
-    async def pump(self, input, output):
+    async def refine(self, input, output):
         if input:
             source = input
         elif self.source:

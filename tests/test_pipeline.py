@@ -3,7 +3,7 @@ import trio
 
 from slurry import Pipeline
 from slurry.sections import Map
-from slurry.sections.abc import Section
+from slurry.environments import TrioSection
 
 from .fixtures import produce_increasing_integers
 
@@ -31,11 +31,11 @@ async def test_early_tap_closure_aiter(autojump_clock):
                 break
 
 async def test_early_tap_closure_section(autojump_clock):
-    class Spammer(Section):
+    class Spammer(TrioSection):
         def __init__(self, stop) -> None:
             self.stop = stop
 
-        async def pump(self, input, output):
+        async def refine(self, input, output):
             for i in range(self.stop):
                 await output(i)
 
