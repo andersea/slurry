@@ -13,9 +13,9 @@ includes the following types:
   automatically used as input to the nested sequence of pipeline sections.
 
 The main :class:`Pipeline <slurry.Pipeline>` class uses the ``weld`` function to compose the sequence of
-``PipelineSection`` objeects (see below) and return an output. Similarly, the combiner sections
-in the :ref:`Combiners` module use the ``weld`` function to support defining sub-pipelines as
-input sources, using the tuple notation."""
+``PipelineSection`` objeects (see below) and return an output. Similarly, the
+:ref:`combiner sections <Combining multiple inputs>` use the ``weld`` function to support defining
+sub-pipelines as input sources, using the tuple notation."""
 
 from typing import Any, AsyncIterable, Optional, Sequence
 

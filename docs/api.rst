@@ -73,8 +73,8 @@ Abstract base classes
 .. autoclass:: SyncSection
   :members:
 
-Welding sections
-^^^^^^^^^^^^^^^^
+Welding sections together
+^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: slurry.sections.weld
   :members:
 

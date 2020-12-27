@@ -1,5 +1,5 @@
 """The :class:`Pipeline` class is a composable a stream processor. It consists of a chain of
-:mod:`pipeline section <slurry.sections.weld>` compatible objects, which each handle a single
+:ref:`pipeline section <Welding sections together>` compatible objects, which each handle a single
 stream processing operation.
 
 The stream processing results are accessed by calling :meth:`Pipeline.tap` to create an
