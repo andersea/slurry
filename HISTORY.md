@@ -1,5 +1,16 @@
 # History
 
+## v0.10.0
+
+* Introducing external environments. Via the new AsyncSection and SyncSection base classes, it is now
+possible to create custom environments to run sections in. In v0.7.0 and v0.8.0, ThreadSection and
+ProcessSection was introduced. The environments that ran these sections was hardcoded into the Pipeline
+machinery. With this change, the Section itself is responsible for setting up the environment it runs in.
+This means, that external sections can now create and manage their environments, and data should flow
+between those environments and the main pipeline transparently.
+* Api change: Introduces the refine method. The actual work that the pipeline section performs should be
+done here.
+
 ## v0.9.0
 
 * New PipelineSection concept. The pipeline section generalizes the types of input that is allowed in pipelines and select sections that take input. PipelineSections can either be asynchronous iterables, Sections or Tuples representing sequences of pipeline sections. Using tuples of pipeline sections, it possible to compose nested pipelines to any depth.
