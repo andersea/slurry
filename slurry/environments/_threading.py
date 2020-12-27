@@ -7,17 +7,14 @@ from ..sections.abc import SyncSection
 
 
 class ThreadSection(SyncSection):
-    """ThreadSection defines a section interface which uses a synchronous refine method.
-    The refine method runs in a background thread and will not block the underlying
-    event loop.
-
-    See :class:`slurry.sections.abc.SyncSection` for more information.
+    """ThreadSection defines a section interface which uses a synchronous
+    :meth:`refine <slurry.sections.abc.SyncSection.refine>` method.
     """
 
     async def pump(self,
                    input: AsyncIterable[Any],
                    output: Callable[[Any], Awaitable[None]]):
-        """Runs the ThreadSection in a background thread with synchronous input and output
+        """Runs the refine method in a background thread with synchronous input and output
         wrappers, which transparently bridges the input and outputs between the parent
         trio event loop and the sync world.
 

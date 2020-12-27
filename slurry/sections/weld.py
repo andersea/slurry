@@ -1,14 +1,5 @@
-"""
-The weld module implements the ``weld`` function that connects pipeline sections together and
-returns the async iterable output.
-
-The main :class:`slurry.pipeline.Pipeline` class uses the ``weld`` function to compose the sequence of
-PipelineSections and return an output. Similarly, the combiner sections in the
-:mod:`slurry.sections._combiners` module use the ``weld`` function to support defining
-sub-pipelines as input sources.
-
-PipelineSection
-^^^^^^^^^^^^^^^
+"""The weld module implements the ``weld`` function that connects ``PipelineSection`` objects 
+together and returns the async iterable output.
 
 A ``PipelineSection`` is any object that is valid input to the ``weld`` function. This currently
 includes the following types:
@@ -16,11 +7,15 @@ includes the following types:
 * ``AsyncIterable[Any]`` - Async iterables are valid only as the very first ``PipelineSection``. Subsequent
   sections will use this async iterable as input source. Placing an ``AsyncIterable`` into the middle of
   of a sequence of pipeline sections, will cause a ``ValueError``.
-* A :class:`Section` or any class derived from :class:`Section`.
+* Any :class:`Section` abc subclass.
 * ``Tuple[PipelineSection, ...]`` - Pipeline sections can be nested to any level by supplying a tuple
-  containing one or more PipelineSections. Output from upstream sections are automatically used as input
-  to the nested sequence of pipeline sections.
-"""
+  containing one or more pipeline section-compatible objects. Output from upstream sections are
+  automatically used as input to the nested sequence of pipeline sections.
+
+The main :class:`Pipeline <slurry.Pipeline>` class uses the ``weld`` function to compose the sequence of
+``PipelineSection`` objeects (see below) and return an output. Similarly, the combiner sections
+in the :ref:`Combiners` module use the ``weld`` function to support defining sub-pipelines as
+input sources, using the tuple notation."""
 
 from typing import Any, AsyncIterable, Optional, Sequence
 

@@ -10,7 +10,7 @@ from ..environments import TrioSection
 from .weld import weld
 
 class Chain(TrioSection):
-    """Chains output from one or more sources. Any valid ``PipelineSection`` is an allowed source.
+    """Chains input from one or more sources. Any valid ``PipelineSection`` is an allowed source.
 
     Outputs items from each source in turn, until it is exhausted. If a source never reaches the
     end, remaining sources will not be iterated.
@@ -47,7 +47,7 @@ class Chain(TrioSection):
                         await output(item)
 
 class Merge(TrioSection):
-    """Merges the outputs of multiple sources. Any valid ``PipelineSection`` is an allowed source.
+    """Merges input from multiple sources. Any valid ``PipelineSection`` is an allowed source.
 
     Sources are iterated in parallel and items are send from each source, as soon as
     they become available.
@@ -79,7 +79,7 @@ class Merge(TrioSection):
                 nursery.start_soon(pull_task, source)
 
 class Zip(TrioSection):
-    """Zips the output of multiple sources. Any valid ``PipelineSection`` is an allowed source.
+    """Zips the input from multiple sources. Any valid ``PipelineSection`` is an allowed source.
 
     Sources are iterated in parallel and as soon as all sources have an item available, those
     items are output as a tuple.
@@ -130,7 +130,7 @@ class Zip(TrioSection):
             await source.aclose()
 
 class ZipLatest(TrioSection):
-    """Zips one or more sources and outputs a result on every received item. Any valid
+    """Zips input from multiple sources and outputs a result on every received item. Any valid
     ``PipelineSection`` is an allowed source.
 
     Sources are iterated in parallel and a tuple is output each time a result is ready

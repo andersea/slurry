@@ -6,27 +6,22 @@ class Section(ABC):
     """Each pipeline section takes inputs from an async iterable, processes it and sends it to an
     output.
 
-    A section must implement the ``pump`` abstract method, which will be scheduled to run as a task
+    A section must implement the :meth:`pump` abstract method, which will be scheduled to run as a task
     by the pipeline. The pump method serves as an underlying machinery for pulling and pushing
     data through the section.
 
-    In addition, sections should implement a refine method which performs the actual processing
-    of each received item.
-
-    The api of the pump method is defined by this abc and cannot be changed in derived sections,
-    whereas the api of the refine method is implementation dependent.
+    Each subclass of section must implement a way to process each received item. This should be
+    done by either implementing an asynchronous or synchronous refine method. Slurry defines two
+    standard apis for implementing a refine method, an asynchronous one as defined by
+    :class:`AsyncSection`, and a synchronous as defined by :class:`SyncSection`. The refine api
+    is not strictly a requirement, but a convention. Any class that implements the ``Section``
+    api is a valid pipeline section.
     """
 
     @abstractmethod
     async def pump(self, input: Optional[AsyncIterable[Any]], output: Callable[[Any], Awaitable[None]]):
         """The pump method contains the machinery that takes input from previous sections, or
         any asynchronous iterable, processes it and pushes it to the output.
-
-        Each subclass of section must implement a way to process each received item. This should be
-        done by either implementing an asynchronous or synchronous refine method. Slurry defines two
-        standard apis for implementing a refine method, an asynchronous one as defined by
-        :class:`AsyncSection`, and a synchronous as defined by :class:`SyncSection`. It is not a
-        requirement that custom sections follow this api. Only the pump api is locked.
 
         .. note::
             The receiving end of the output can be closed by the pipeline or by the downstream

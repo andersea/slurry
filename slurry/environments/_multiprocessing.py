@@ -8,16 +8,15 @@ import trio
 from ..sections.abc import SyncSection
 
 class ProcessSection(SyncSection):
-    """ProcessSection defines a section interface with a synchronous refine method that
+    """ProcessSection defines a section interface with a synchronous
+    :meth:`refine <slurry.sections.abc.SyncSection.refine>` method that
     runs in a separate process. Slurry makes use of the python
     `multiprocessing <https://docs.python.org/3/library/multiprocessing.html>`_ module
     to spawn the process.
 
     .. note::
-        ProcessSection implementations must be `pickleable
+        ``ProcessSection`` implementations must be `pickleable
         <https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled>`_.
-
-    See :class:`slurry.sections.abc.SyncSection` for more information.
     """
 
     async def pump(self, input: AsyncIterable[Any], output: Callable[[Any], Awaitable[None]]):

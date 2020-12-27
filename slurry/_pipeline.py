@@ -1,5 +1,6 @@
 """The :class:`Pipeline` class is a composable a stream processor. It consists of a chain of
-:class:`slurry.abc.Section`, which each handle a single stream processing operation.
+:mod:`pipeline section <slurry.sections.weld>` compatible objects, which each handle a single
+stream processing operation.
 
 The stream processing results are accessed by calling :meth:`Pipeline.tap` to create an
 output channel. Each pipeline can have multiple open taps, each receiving a copy of the
@@ -44,8 +45,8 @@ class Pipeline:
     async def create(cls, *sections: Sequence["PipelineSection"]) -> AsyncContextManager["Pipeline"]:
         """Creates a new pipeline context and adds the given section sequence to it.
 
-        :param Sequence[PipelineSection] \*sections: One or more ``PipelineSections``.
-          See :mod:`slurry.sections.abc`.
+        :param Sequence[PipelineSection] \*sections: One or more
+          :mod:`PipelineSection <slurry.sections.weld>` compatible objects.
         """
         async with trio.open_nursery() as nursery:
             pipeline = cls(*sections, nursery=nursery, enabled=trio.Event())

@@ -1,6 +1,6 @@
 # History
 
-## v0.10.0
+## v0.10.1
 
 * Introducing external environments. Via the new AsyncSection and SyncSection base classes, it is now
 possible to create custom environments to run sections in. In v0.7.0 and v0.8.0, ThreadSection and
@@ -10,10 +10,11 @@ This means, that external sections can now create and manage their environments,
 between those environments and the main pipeline transparently.
 * Api change: Introduces the refine method. The actual work that the pipeline section performs should be
 done here.
+* Thorough api documentation rework.
 
 ## v0.9.0
 
-* New PipelineSection concept. The pipeline section generalizes the types of input that is allowed in pipelines and select sections that take input. PipelineSections can either be asynchronous iterables, Sections or Tuples representing sequences of pipeline sections. Using tuples of pipeline sections, it possible to compose nested pipelines to any depth.
+* New PipelineSection concept. The pipeline section generalizes the types of input that is allowed in pipelines and select sections that take input. PipelineSection objects can either be asynchronous iterables, Sections or Tuples representing sequences of pipeline sections. Using tuples of pipeline sections, it possible to compose nested pipelines to any depth.
 * Changed api. Section pumps now take a callable that returns an awaitable as output, instead of an explicit trio.MemorySendChannel. This brings the api in line with synchronous sections, however this is obviously a breaking change.
 
 ## v0.8.0

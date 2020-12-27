@@ -4,128 +4,106 @@ API
 
 Pipeline
 --------
-.. automodule:: slurry.pipeline
+.. automodule:: slurry._pipeline
 
-Pipeline
-^^^^^^^^
-.. autoclass:: Pipeline
+.. autoclass:: slurry.Pipeline
   :members:
 
-Weld
-----
-.. automodule:: slurry.sections.weld
+Sections
+--------
 
-weld
-^^^^
-.. autofunction:: slurry.sections.weld.weld
+Transforming input
+^^^^^^^^^^^^^^^^^^
+.. automodule:: slurry.sections._refiners
 
-Abc
----
-.. automodule:: slurry.sections.abc
+.. autoclass:: slurry.sections.Map
 
-Section
-^^^^^^^
-.. autoclass:: Section
-  :members:
 
-AsyncSection
-^^^^^^^^^^^^
-.. autoclass:: AsyncSection
-  :members:
-
-SyncSection
-^^^^^^^^^^^
-.. autoclass:: SyncSection
-  :members:
-
-Buffers
--------
-.. automodule:: slurry.sections._buffers
-
-Window
-^^^^^^
-.. autoclass:: slurry.sections.Window
-
-Group
-^^^^^
-.. autoclass:: slurry.sections.Group
-
-Delay
-^^^^^
-.. autoclass:: slurry.sections.Delay
-
-Combiners
----------
-.. automodule:: slurry.sections._combiners
-
-Chain
-^^^^^
-.. autoclass:: slurry.sections.Chain
-
-Merge
-^^^^^
-.. autoclass:: slurry.sections.Merge
-
-Zip
-^^^
-.. autoclass:: slurry.sections.Zip
-
-ZipLatest
-^^^^^^^^^
-.. autoclass:: slurry.sections.ZipLatest
-
-Filters
--------
+Filtering input
+^^^^^^^^^^^^^^^
 .. automodule:: slurry.sections._filters
 
-Skip
-^^^^
 .. autoclass:: slurry.sections.Skip
 
-Filter
-^^^^^^
 .. autoclass:: slurry.sections.Filter
 
-Changes
-^^^^^^^
 .. autoclass:: slurry.sections.Changes
 
-RateLimit
-^^^^^^^^^
 .. autoclass:: slurry.sections.RateLimit
 
 
-Producers
----------
+Buffering input
+^^^^^^^^^^^^^^^
+.. automodule:: slurry.sections._buffers
+
+.. autoclass:: slurry.sections.Window
+
+.. autoclass:: slurry.sections.Group
+
+.. autoclass:: slurry.sections.Delay
+
+Generating new output
+^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: slurry.sections._producers
 
-Repeat
-^^^^^^
 .. autoclass:: slurry.sections.Repeat
 
+Combining multiple inputs
+^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: slurry.sections._combiners
 
-Refiners
---------
-.. automodule:: slurry.sections._refiners
+.. autoclass:: slurry.sections.Chain
 
-Map
-^^^
-.. autoclass:: slurry.sections.Map
+.. autoclass:: slurry.sections.Merge
 
-Threading
----------
-.. automodule:: slurry.sections.threading
+.. autoclass:: slurry.sections.Zip
 
-ThreadSection
-^^^^^^^^^^^^^
-.. autoclass:: slurry.sections.threading.ThreadSection
+.. autoclass:: slurry.sections.ZipLatest
+
+Abstract base classes
+^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: slurry.sections.abc
+
+.. autoclass:: Section
   :members:
 
-Multiprocessing
----------------
-.. automodule:: slurry.sections.multiprocessing
+.. autoclass:: AsyncSection
+  :members:
 
-ProcessSection
+.. autoclass:: SyncSection
+  :members:
+
+Welding sections
+^^^^^^^^^^^^^^^^
+.. automodule:: slurry.sections.weld
+  :members:
+
+Environments
+------------
+
+Environments are implementations of :class:`AsyncSection <slurry.sections.abc.AsyncSection>` or
+:class:`SyncSection <slurry.sections.abc.SyncSection>`, that is, they have a pump method
+implementation that can run the section's ``refine`` method in derived classes.
+
+Trio
+^^^^
+.. automodule:: slurry.environments._trio
+
+.. autoclass:: slurry.environments.TrioSection
+  :members:
+
+
+Threading
+^^^^^^^^^
+.. automodule:: slurry.environments._threading
+
+.. autoclass:: slurry.environments.ThreadSection
+  :members:
+
+
+Multiprocessing
 ^^^^^^^^^^^^^^
-.. autoclass:: slurry.sections.multiprocessing.ProcessSection
+.. automodule:: slurry.environments._multiprocessing
+
+.. autoclass:: slurry.environments.ProcessSection
   :members:

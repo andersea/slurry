@@ -1,4 +1,4 @@
-"""Pipeline sections that filter the incoming items."""
+"""Pipeline sections that filters the incoming items."""
 from typing import Any, AsyncIterable, Callable, Hashable, Optional, Union
 
 from async_generator import aclosing
