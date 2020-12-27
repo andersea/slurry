@@ -2,6 +2,12 @@
 
 ## v0.10.1
 
+* Thorough api documentation rework.
+
+## v0.10.0
+
+(Not released.)
+
 * Introducing external environments. Via the new AsyncSection and SyncSection base classes, it is now
 possible to create custom environments to run sections in. In v0.7.0 and v0.8.0, ThreadSection and
 ProcessSection was introduced. The environments that ran these sections was hardcoded into the Pipeline
@@ -10,7 +16,6 @@ This means, that external sections can now create and manage their environments,
 between those environments and the main pipeline transparently.
 * Api change: Introduces the refine method. The actual work that the pipeline section performs should be
 done here.
-* Thorough api documentation rework.
 
 ## v0.9.0
 
