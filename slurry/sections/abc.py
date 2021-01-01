@@ -82,8 +82,8 @@ class SyncSection(Section):
 
         .. note::
             Slurry includes two implementations of ``SyncSection``.
-            :class:`slurry.sections.threading.ThreadSection`, which runs the refine function in
-            a background thread, and :class:`slurry.sections.multiprocessing.ProcessSection`
+            :class:`slurry.environments.ThreadSection`, which runs the refine function in
+            a background thread, and :class:`slurry.environments.ProcessSection`
             which spawns an independent process that runs the refine method.
 
         :param input: The input data feed. Like with ordinary sections, this can be ``None`` if
