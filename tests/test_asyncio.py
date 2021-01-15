@@ -10,6 +10,7 @@ class DummyAsyncioSection(AsyncioSection):
 class SimpleAsyncioSection(AsyncioSection):
     async def refine(self, input, output):
         await output('hello, world!')
+        print('Output sent')
 
 class RepeatingAsyncioSection(AsyncioSection):
 
