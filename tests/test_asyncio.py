@@ -3,6 +3,8 @@ import asyncio
 from slurry import Pipeline
 from slurry.environments import AsyncioSection
 
+from .fixtures import produce_increasing_integers
+
 class DummyAsyncioSection(AsyncioSection):
     async def refine(self, input, output):
         pass
@@ -19,6 +21,10 @@ class RepeatingAsyncioSection(AsyncioSection):
             await output('hello, world!')
             await asyncio.sleep(0.5)
 
+class SquaresAsyncioSection(AsyncioSection):
+    async def refine(self, input, output):
+        async for i in input:
+            await output(i*i)
 
 async def test_dummy():
     async with Pipeline.create(
@@ -41,3 +47,12 @@ async def test_early_tap_closure():
         async for item in aiter:
             assert item == 'hello, world!'
             break
+
+async def test_trio_generator_to_asyncio(autojump_clock):
+    for _ in range(30):
+        async with Pipeline.create(
+            produce_increasing_integers(1),
+            SquaresAsyncioSection()
+        ) as pipeline, pipeline.tap() as aiter:
+            results = [i async for i in aiter]
+            assert results == [0, 1, 4]
