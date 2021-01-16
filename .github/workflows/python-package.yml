@@ -24,7 +24,20 @@ jobs:
       run: python -m pip install --upgrade pip
     - name: Install poetry
       uses: abatilo/actions-poetry@v2.1.0
+    - name: Cache poetry virtualenv
+      uses: actions/cache@v1
+      id: cache
+      with:
+        path: ~/.virtualenvs
+        key: poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    - name: Set poetry config
+        run: |
+          poetry config settings.virtualenvs.in-project false
+          poetry config settings.virtualenvs.path ~/.virtualenvs
     - name: Install dependencies
       run: poetry install
+      if: steps.cache.outputs.cache-hit != 'true'
     - name: Test with pytest
       run: poetry run pytest
