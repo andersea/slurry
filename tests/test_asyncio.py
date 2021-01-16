@@ -70,7 +70,8 @@ async def test_trio_generator_to_asyncio(autojump_clock):
         results = [i async for i in aiter]
         assert results == [0, 1, 4]
 
-@pytest.mark.skipif(os.getenv('TRAVIS', False), reason='Skip on Travis due to timeout.')
+@pytest.mark.skipif("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true",
+                    reason="Skip long running test on Travis")
 async def test_spam_pipelines(autojump_clock):
     for _ in range(100):
         async with Pipeline.create(
