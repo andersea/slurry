@@ -1,5 +1,10 @@
 # History
 
+## v0.10.2
+
+* Switch to github actions for CI.
+* Minor documentation edits.
+
 ## v0.10.1
 
 * Thorough api documentation rework.
