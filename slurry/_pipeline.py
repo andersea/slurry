@@ -45,7 +45,7 @@ class Pipeline:
     async def create(cls, *sections: Sequence["PipelineSection"]) -> AsyncContextManager["Pipeline"]:
         """Creates a new pipeline context and adds the given section sequence to it.
 
-        :param Sequence[PipelineSection] \*sections: One or more
+        :param Sequence[PipelineSection] \\*sections: One or more
           :mod:`PipelineSection <slurry.sections.weld>` compatible objects.
         """
         async with trio.open_nursery() as nursery:
@@ -116,7 +116,7 @@ class Pipeline:
     def extend(self, *sections: Sequence["PipelineSection"], start: bool = False) -> "Pipeline":
         """Extend this pipeline into a new pipeline.
 
-        :param Sequence[PipelineSection] \*sections: One or more pipeline sections.
+        :param Sequence[PipelineSection] \\*sections: One or more pipeline sections.
         :param bool start: Start processing when adding this extension. (default: ``False``)
         """
         pipeline = Pipeline(

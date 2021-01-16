@@ -24,7 +24,7 @@ class Chain(TrioSection):
     :param sources: One or more ``PipelineSection`` that will be chained together.
     :type sources: Sequence[PipelineSection]
     :param place_input: Iteration priority of the pipeline input source. Options:
-        ``'first'`` (default) \| ``'last'``.
+        ``'first'`` (default) \\| ``'last'``.
     :type place_input: string
     """
     def __init__(self, *sources: Sequence["PipelineSection"], place_input='first'):
@@ -93,7 +93,7 @@ class Zip(TrioSection):
     :param sources:  One or more ``PipelineSection``, who's contents will be zipped.
     :type sources: Sequence[PipelineSection]
     :param place_input:  Position of the pipeline input source in the output tuple. Options:
-        ``'first'`` (default) \| ``'last'``.
+        ``'first'`` (default) \\| ``'last'``.
     :type place_input: string
     """
     def __init__(self, *sources: Sequence["PipelineSection"], place_input='first'):

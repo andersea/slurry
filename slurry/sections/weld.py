@@ -30,8 +30,8 @@ def weld(nursery, *sections: Sequence["PipelineSection"]) -> AsyncIterable[Any]:
 
     :param nursery: The nursery that runs individual pipeline section pumps.
     :type nursery: :class:`trio.Nursery`
-    :param \*sections: A sequence of pipeline sections.
-    :type \*sections: Sequence[PipelineSection]
+    :param \\*sections: A sequence of pipeline sections.
+    :type \\*sections: Sequence[PipelineSection]
     """
 
     async def pump(section, input: Optional[AsyncIterable[Any]], output: trio.MemorySendChannel):
