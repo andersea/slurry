@@ -10,8 +10,8 @@ Slurry
    :target: https://pypi.org/project/slurry
    :alt: Latest PyPi version
 
-.. image:: https://travis-ci.com/andersea/slurry.svg?branch=master
-   :target: https://travis-ci.com/andersea/slurry
+.. image:: https://github.com/andersa/slurry/workflows/Continuous Integration/badge.svg
+   :target: https://github.com/andersea/slurry
    :alt: Build Status
 
 An async stream processing microframework for Python
