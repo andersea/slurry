@@ -1,9 +1,12 @@
 
 import asyncio
+
+import pytest
 from slurry import Pipeline
 from slurry.environments import AsyncioSection
 
 from .fixtures import produce_increasing_integers
+
 
 class DummyAsyncioSection(AsyncioSection):
     async def refine(self, input, output):
@@ -12,7 +15,10 @@ class DummyAsyncioSection(AsyncioSection):
 class SimpleAsyncioSection(AsyncioSection):
     async def refine(self, input, output):
         await output('hello, world!')
-        print('Output sent')
+
+class BadAsyncioSection(AsyncioSection):
+    async def refine(self, input, output):
+        raise RuntimeError('RuntimeError')
 
 class RepeatingAsyncioSection(AsyncioSection):
 
@@ -40,6 +46,13 @@ async def test_simple_section():
         async for item in aiter:
             assert item == 'hello, world!'
 
+async def test_bad_section():
+    with pytest.raises(RuntimeError):
+        async with Pipeline.create(
+            BadAsyncioSection()
+        ) as pipeline, pipeline.tap() as aiter:
+            results = [item async for item in aiter]
+
 async def test_early_tap_closure():
     async with Pipeline.create(
         RepeatingAsyncioSection()
@@ -49,7 +62,15 @@ async def test_early_tap_closure():
             break
 
 async def test_trio_generator_to_asyncio(autojump_clock):
-    for _ in range(30):
+    async with Pipeline.create(
+        produce_increasing_integers(1),
+        SquaresAsyncioSection()
+    ) as pipeline, pipeline.tap() as aiter:
+        results = [i async for i in aiter]
+        assert results == [0, 1, 4]
+
+async def test_spam_pipelines(autojump_clock):
+    for _ in range(100):
         async with Pipeline.create(
             produce_increasing_integers(1),
             SquaresAsyncioSection()
