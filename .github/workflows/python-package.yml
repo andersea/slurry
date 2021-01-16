@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  ci:
+  test:
     name: Run tests
     runs-on: ubuntu-latest
     strategy:
@@ -20,8 +20,6 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Update pip
-      run: python -m pip install --upgrade pip
     - name: Install poetry
       uses: abatilo/actions-poetry@v2.1.0
     - name: Cache poetry virtualenv
@@ -41,3 +39,10 @@ jobs:
       if: steps.cache.outputs.cache-hit != 'true'
     - name: Test with pytest
       run: poetry run pytest
+    - name: Publish to pypi
+      if: matrix.python-version == 3.9
+      run: |
+        poetry config pypi-token.pypi "${{ secrets.PYPI_API_KEY }}"
+        poetry publish --build
+
+
