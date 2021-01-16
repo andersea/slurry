@@ -10,7 +10,7 @@ Slurry
    :target: https://pypi.org/project/slurry
    :alt: Latest PyPi version
 
-.. image:: https://github.com/andersa/slurry/workflows/Continuous%20Integration/badge.svg
+.. image:: https://github.com/andersa/slurry/workflows/build/badge.svg
    :target: https://github.com/andersea/slurry
    :alt: Build Status
 
