@@ -34,8 +34,8 @@ jobs:
           poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
     - name: Set poetry config
       run: |
-        poetry config settings.virtualenvs.in-project false
-        poetry config settings.virtualenvs.path ~/.virtualenvs
+        poetry config virtualenvs.in-project false
+        poetry config virtualenvs.path ~/.virtualenvs
     - name: Install dependencies
       run: poetry install
       if: steps.cache.outputs.cache-hit != 'true'
