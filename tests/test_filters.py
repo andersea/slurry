@@ -10,6 +10,13 @@ async def test_skip(autojump_clock):
         result = [i async for i in aiter]
         assert result == [5, 6, 7, 8, 9]
 
+async def test_skip_short_stream(autojump_clock):
+    async with Pipeline.create(
+        Skip(5, produce_increasing_integers(1))
+    ) as pipeline, pipeline.tap() as aiter:
+        result = [i async for i in aiter]
+        assert result == []
+
 async def test_filter(autojump_clock):
     async with Pipeline.create(
         Filter(lambda x: x%2, produce_increasing_integers(1, max=10))
