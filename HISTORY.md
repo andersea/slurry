@@ -1,5 +1,9 @@
 # History
 
+## v0.10.3
+
+* Fix unhandled StopAsyncIteration in Skip section.
+
 ## v0.10.2
 
 * Switch to github actions for CI.
