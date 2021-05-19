@@ -1,5 +1,9 @@
 # History
 
+## v0.10.4
+
+* Update to trio 0.18
+
 ## v0.10.3
 
 * Fix unhandled StopAsyncIteration in Skip section.
