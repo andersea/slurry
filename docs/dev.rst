@@ -103,7 +103,7 @@ and not having to worry about building message passing infrastructure.
 
 The main :class:`Pipeline <slurry.Pipeline>` class uses the ``weld`` function to compose the sequence of
 ``PipelineSection`` objects and return an output. Similarly, the
-:ref:`combiner sections <Combining multiple inputs>` use the ``weld`` function to support defining
+:ref:`combiner sections <user:Combining multiple inputs>` use the ``weld`` function to support defining
 sub-pipelines as input sources, using the tuple notation. User defined
 custom sections, can also use the ``weld`` funcion to add the same functionality.
 
