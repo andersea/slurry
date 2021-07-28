@@ -1,14 +1,4 @@
-"""The :class:`Pipeline` class is a composable a stream processor. It consists of a chain of
-:ref:`pipeline section <Welding sections together>` compatible objects, which each handle a single
-stream processing operation.
-
-The stream processing results are accessed by calling :meth:`Pipeline.tap` to create an
-output channel. Each pipeline can have multiple open taps, each receiving a copy of the
-output stream.
-
-The pipeline can also be extended dynamically with new pipeline sections with
-:meth:`Pipeline.extend`, adding additional processing.
-"""
+"""Contains the main Slurry ``Pipeline`` class."""
 
 import math
 from typing import AsyncContextManager, Sequence

@@ -8,5 +8,5 @@
 .. toctree::
    :hidden:
 
-   guide
-   api
+   user
+   dev
