@@ -11,7 +11,7 @@ variety of configurable components, called sections, and feeding the processed d
 the key features of Slurry, is that processing occurs asynchronously in a task based fashion. This allows advanced time-based
 components to be build, like for example sections that group input based on timers.
 
-Slurry is inspired a mix of different ideas from programming paradigms such as functional programming, to IoT data processing
+Slurry is inspired by a mix of different ideas from programming paradigms such as functional programming, IoT data processing
 frameworks like Node-RED_, and graphical data science frameworks like KNIME_ and Alteryx_. From the python world, Slurry takes
 inspiration from iteration libraries like the built-in module itertools_. When combined with asynchronous features, those
 libraries has lead to more advanced tools like aiostream_, eventkit_ and asyncitertools_. Especially aiostream_ deserves
@@ -31,17 +31,21 @@ we go.
 
 Pipelines
 ---------
-The :class:`Pipeline <slurry.Pipeline>` class is a composable a stream processor. It consists of a chain of
+The :class:`Pipeline <slurry.Pipeline>` class is a composable stream processor. It consists of a chain of
 ``PipelineSection`` compatible objects, which each handle a single stream processing operation. Slurry
 contains a helper function called `weld` that takes care of composing (welding) a
 pipeline out of individual sections. A ``PipelineSection`` is any object that is valid input to the `weld`
 function. This currently includes the following types:
 
-* ``AsyncIterable[Any]`` - Async iterables are valid only as the very first ``PipelineSection``. Subsequent
+AsyncIterables
+  Async iterables are valid only as the very first ``PipelineSection``. Subsequent
   sections will use this async iterable as input source. Placing an ``AsyncIterable`` into the middle of
   a sequence of pipeline sections, will cause a ``ValueError``.
-* Any :class:`slurry.sections.abc.Section` abc subclass.
-* ``Tuple[PipelineSection, ...]`` - Pipeline sections can be nested to any level by supplying a tuple
+Sections
+  Any :class:`Section <slurry.sections.abc.Section>` abc subclass is a valid ``PipelineSection``, at any
+  position in the pipeline.
+Tuples
+  Pipeline sections can be nested to any level by supplying a ``Tuple[PipelineSection, ...]``
   containing one or more pipeline section-compatible objects. Output from upstream sections are
   automatically used as input to the nested sequence of pipeline sections.
 
