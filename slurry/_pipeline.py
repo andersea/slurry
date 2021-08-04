@@ -105,6 +105,12 @@ class Pipeline:
 
     def extend(self, *sections: Sequence["PipelineSection"], start: bool = False) -> "Pipeline":
         """Extend this pipeline into a new pipeline.
+        
+        An extension will add a tap to the existing pipeline and use this tap as input to the
+        newly added pipeline.
+        
+        Extensions can be added dynamically during runtime. The data feed
+        will start at the current position. Old events won't be replayed.
 
         :param Sequence[PipelineSection] \\*sections: One or more pipeline sections.
         :param bool start: Start processing when adding this extension. (default: ``False``)
