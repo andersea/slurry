@@ -70,26 +70,30 @@ from the previous section, or from an asynchronous iterable, processes it and se
 all the user has to do is to configure these sections, and decide on the ordering of each step in the pipeline. The
 ``Pipeline`` takes care of wiring together sections, so the output gets routed to the input of the subsequent section.
 
-.. note::
-  Behind the scenes, data is send between sections using message passing via
-  `trio memory channels <https://trio.readthedocs.io/en/stable/reference-core.html#using-channels-to-pass-values-between-tasks>`_.
-  Each section is executed as a
-  `Trio task <https://trio.readthedocs.io/en/stable/reference-core.html#tasks-let-you-do-multiple-things-at-once>`_
-  and, from the user perspective, are in principle completely non-blocking and independent of each other.  
-
-.. warning::
-  Although individual sections can be thought of as running independently, this is not a guarantee. Slurry may now, or at any
-  later time, chose to apply certain optimizations, like merging a sequence of strictly functional operations
-  like :class:`slurry.sections.Map` into a single operation.
+Behind the scenes, data is send between sections using message passing via
+`trio memory channels <https://trio.readthedocs.io/en/stable/reference-core.html#using-channels-to-pass-values-between-tasks>`_.
+Each section is executed as a
+`Trio task <https://trio.readthedocs.io/en/stable/reference-core.html#tasks-let-you-do-multiple-things-at-once>`_
+and, from the user perspective, are in principle completely non-blocking and independent of each other.  
 
 Slurry includes a library of ready made sections, with functionality inspired by other reactive frameworks. They
 are documented below. For more information about sections, and how to build your own sections, read the :ref:`Developer Guide`.
+
+Most ready made sections support an optional source parameter. In most cases this is semantically identical to using that source
+as an async interable input to the pipeline, however using the source parameter instead, may sometimes be more readable.
+
+Some sections, like :class:`slurry.sections.Zip`, support multiple inputs, which must be supplied as parameters.
 
 Transforming input
 ^^^^^^^^^^^^^^^^^^
 .. automodule:: slurry.sections._refiners
 
 .. autoclass:: slurry.sections.Map
+
+.. note::
+  Although individual sections can be thought of as running independently, this is not a guarantee. Slurry may now, or at any
+  later time, chose to apply certain optimizations, like merging a sequence of strictly functional operations
+  like :class:`slurry.sections.Map` into a single operation.
 
 Filtering input
 ^^^^^^^^^^^^^^^

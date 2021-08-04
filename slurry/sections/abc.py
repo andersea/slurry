@@ -14,13 +14,6 @@ class Section(ABC):
             If this section is the first section of a pipeline, the input will be ``None``. In this
             case, the section is expected to produce output independently.
 
-        .. warning::
-            The receiving end of the output can be closed by the pipeline or by the downstream
-            section at any time. If you try to send an item to an output that has a closed receiver,
-            a ``BrokenResourceError`` will be raised. The pipeline knows about this and is prepared
-            to handle it for you, but if you need to do some kind of cleanup, like closing network
-            connections for instance, you may want to handle this exception yourself.
-
         :param input: The input data feed. Will be ``None`` for the first ``Section``, as the first
             ``Section`` is expected to supply it's own input.
         :type input: Optional[AsyncIterable[Any]]
@@ -56,12 +49,6 @@ class SyncSection(Section):
         The refine method is designed to have an api that is as close to the async api as
         possible. The input is a synchronous iterable instead of an async iterable, and the
         output is a synchronous callable, similar to a ``Queue.put`` method.
-
-        .. note::
-            Slurry includes two implementations of ``SyncSection``.
-            :class:`slurry.environments.ThreadSection`, which runs the refine function in
-            a background thread, and :class:`slurry.environments.ProcessSection`
-            which spawns an independent process that runs the refine method.
 
         :param input: The input data feed. Like with ordinary sections, this can be ``None`` if
             ``SyncSection`` is the first section in the pipeline.
