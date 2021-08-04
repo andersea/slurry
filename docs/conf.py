@@ -23,7 +23,7 @@ copyright = '2020, Anders Ellenshøj Andersen'
 author = 'Anders Ellenshøj Andersen'
 
 # The full version, including alpha/beta/rc tags
-release = '0.10.4'
+release = '1.0.0'
 
 
 # -- General configuration ---------------------------------------------------
