@@ -1,5 +1,5 @@
 """The threading module implements a synchronous section that runs in a background thread."""
-from typing import Any, AsyncIterable, Awaitable, Callable
+from typing import Any, Iterable, Callable
 
 import trio
 
@@ -12,8 +12,8 @@ class ThreadSection(SyncSection):
     """
 
     async def pump(self,
-                   input: AsyncIterable[Any],
-                   output: Callable[[Any], Awaitable[None]]):
+                   input: Iterable[Any],
+                   output: Callable[[Any], None]):
         """Runs the refine method in a background thread with synchronous input and output
         wrappers, which transparently bridges the input and outputs between the parent
         trio event loop and the sync world.
