@@ -73,8 +73,7 @@ Still here? Wanna try it out yourself? Install from PyPI_::
 
    pip install slurry
 
-Slurry is tested on Python 3.6 or greater. For now, Slurry is Trio only. AnyIO_ support is not
-ruled out in the future.
+Slurry is tested on Python 3.6 or greater and requires the Trio_:: concurrency and IO library.
 
 License
 -------
