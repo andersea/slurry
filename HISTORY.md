@@ -1,5 +1,10 @@
 # History
 
+## v1.0.0
+
+* Documentation has been further reworked and refined. As this version is feature complete for my personal use, and
+has good documentation, we are good to release as v1.0.
+
 ## v0.10.4
 
 * Update to trio 0.18
