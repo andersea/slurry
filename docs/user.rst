@@ -101,6 +101,8 @@ Filtering input
 
 .. autoclass:: slurry.sections.Skip
 
+.. autoclass:: slurry.sections.SkipWhile
+
 .. autoclass:: slurry.sections.Filter
 
 .. autoclass:: slurry.sections.Changes

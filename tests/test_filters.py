@@ -1,5 +1,5 @@
 from slurry import Pipeline
-from slurry.sections import Merge, RateLimit, Skip, Filter, Changes
+from slurry.sections import Merge, RateLimit, Skip, SkipWhile, Filter, Changes
 
 from .fixtures import produce_increasing_integers, produce_mappings
 
@@ -16,6 +16,13 @@ async def test_skip_short_stream(autojump_clock):
     ) as pipeline, pipeline.tap() as aiter:
         result = [i async for i in aiter]
         assert result == []
+
+async def test_skipwhile(autojump_clock):
+    async with Pipeline.create(
+        SkipWhile(lambda x: x < 3, produce_increasing_integers(1, max=5))
+    ) as pipeline, pipeline.tap() as aiter:
+        result = [i async for i in aiter]
+        assert result == [3, 4]
 
 async def test_filter(autojump_clock):
     async with Pipeline.create(

@@ -38,6 +38,40 @@ class Skip(TrioSection):
             async for item in aiter:
                 await output(item)
 
+class SkipWhile(TrioSection):
+    """Skips items until a predicate function evaluates to false, after which all subsequent items are passed.
+
+    The predicate function must take an item. If the return value evaluates as true, the item is skipped.
+    Otherwise the item is passed and the predicate function is ignored from then on.
+
+    SkipWhile can be used as a starting section if a source is given.
+
+    :param pred: Predicate function.
+    :type pred: Callable[[Any], bool]
+    :param source: Input source if starting section.
+    :type source: Optional[AsyncIterable[Any]]
+    """
+    def __init__(self, pred, source: Optional[AsyncIterable[Any]] = None):
+        super().__init__()
+        self.pred = pred
+        self.source = source
+
+    async def refine(self, input, output):
+        if input:
+            source = input
+        elif self.source:
+            source = self.source
+        else:
+            raise RuntimeError('No input provided.')
+
+        async with aclosing(source) as aiter:
+            async for item in aiter:
+                if not self.pred(item):
+                    await output(item)
+                    break
+            async for item in aiter:
+                await output(item)
+
 class Filter(TrioSection):
     """Outputs items that passes a filter function.
 
