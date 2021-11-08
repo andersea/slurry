@@ -1,8 +1,9 @@
 # History
 
-## v1.1.0
+## v1.1.1
 
 * Added SkipWhile section, which skips items until a predicate evaluates to false.
+* Update all dependencies. Minimum python version bumped to 3.7.
 
 ## v1.0.0
 
