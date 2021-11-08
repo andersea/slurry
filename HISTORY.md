@@ -1,5 +1,9 @@
 # History
 
+## v1.1.0
+
+* Added SkipWhile section, which skips items until a predicate evaluates to false.
+
 ## v1.0.0
 
 * Documentation has been further reworked and refined. As this version is feature complete for my personal use, and
