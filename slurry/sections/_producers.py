@@ -35,26 +35,22 @@ class Repeat(TrioSection):
 
         async with trio.open_nursery() as nursery:
 
-            def start_new_repeater(item):
-                cancel_scope = trio.CancelScope()
-                async def repeater():
-                    with cancel_scope:
-                        while True:
-                            await trio.sleep(self.interval)
-                            await output(item)                
-                nursery.start_soon(repeater)
-                return cancel_scope
+            async def repeater(item, *, task_status=trio.TASK_STATUS_IGNORED):
+                with trio.CancelScope() as cancel_scope:
+                    await output(item)
+                    task_status.started(cancel_scope)
+                    while True:
+                        await trio.sleep(self.interval)
+                        await output(item)
 
-            previous_repeater = None
+            running_repeater = None
 
             if self.has_default:
-                await output(self.default)
-                previous_repeater = start_new_repeater(self.default)
+                running_repeater = await nursery.start(repeater, self.default)
 
             if input:
                 async with aclosing(input) as aiter:
                     async for item in aiter:
-                        if previous_repeater:
-                            previous_repeater.cancel()
-                        await output(item)
-                        previous_repeater = start_new_repeater(item)
+                        if running_repeater:
+                            running_repeater.cancel()
+                        running_repeater = await nursery.start(repeater, item)
