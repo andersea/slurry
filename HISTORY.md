@@ -1,5 +1,14 @@
 # History
 
+## v1.2.0
+
+* Added Metronome, which is a repeater section similar to Repeat, however the timing is based on the wall clock and
+receiving new items doesn't reset the timer.
+* Added InsertValue, which sends a single item once, and then passes through any received items unmodified.
+* Updated all dependencies.
+* Support for python 3.10 was intended for this version, but tests are failing at the moment, due to a build issue.
+Therefore 3.10 support is postponed for now.
+
 ## v1.1.1
 
 * Added SkipWhile section, which skips items until a predicate evaluates to false.
