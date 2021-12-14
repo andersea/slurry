@@ -2,7 +2,7 @@ import pytest
 import trio
 
 from slurry import Pipeline
-from slurry.sections import Repeat
+from slurry.sections import Repeat, Metronome, InsertValue
 
 from .fixtures import produce_alphabet
 
@@ -51,4 +51,25 @@ async def test_repeat_input(autojump_clock):
                 break
     assert results == [('a', 1), ('a', 2), ('b', 2.5), ('b', 3.5), ('c', 4)]
 
-                
+async def test_metronome():
+    async with Pipeline.create(
+        produce_alphabet(5, max=3),
+        Metronome(5)
+    ) as pipeline, pipeline.tap() as aiter:
+        results = []
+        start_time = trio.current_time()
+        async for item in aiter:
+            results.append((item, trio.current_time() - start_time))
+            if len(results) == 2:
+                break
+    assert [x[0] for x in results] == ['a', 'b']
+    assert 5 - results[1][1] + results[0][1] < 0.1
+
+async def test_insert_value(autojump_clock):
+    async with Pipeline.create(
+        produce_alphabet(1, max=3, delay=1),
+        InsertValue('n')
+    ) as pipeline, pipeline.tap() as aiter:
+        start_time = trio.current_time()
+        results = [(v, trio.current_time() - start_time) async for v in aiter]
+        assert results == [('n', 0), ('a', 1), ('b', 2), ('c', 3)]
