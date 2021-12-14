@@ -126,6 +126,10 @@ Generating new output
 
 .. autoclass:: slurry.sections.Repeat
 
+.. autoclass:: slurry.sections.Metronome
+
+.. autoclass:: slurry.sections.InsertValue
+
 Combining multiple inputs
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: slurry.sections._combiners
