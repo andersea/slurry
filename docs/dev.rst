@@ -14,7 +14,7 @@ method from the AsyncSection abc::
           async for i in input:
               await output(i*i)
 
-Slurry is supports two basic types of sections, defined as abstract base classes,
+Slurry supports two basic types of sections, defined as abstract base classes,
 :class:`SyncSection <slurry.sections.abc.SyncSection>` and :class:`AsyncSection <slurry.sections.abc.AsyncSection>`.
 Both types of sections define a ``refine`` method, which, when implemented, does the actual processing for the section.
 
