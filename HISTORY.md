@@ -1,5 +1,10 @@
 # History
 
+## v1.3.0
+
+* Add support for python 3.10, remove support for python 3.7.
+* Bump trio to 0.21.0
+
 ## v1.2.0
 
 * Added Metronome, which is a repeater section similar to Repeat, however the timing is based on the wall clock and
