@@ -1,23 +1,21 @@
 from slurry import Pipeline
 from slurry.sections import Chain, Merge, Zip, ZipLatest, Repeat, Map, Skip
 
-from .fixtures import produce_increasing_integers, produce_alphabet
-
-async def test_chain(autojump_clock):
+async def test_chain(produce_increasing_integers, produce_alphabet, autojump_clock):
     async with Pipeline.create(
         Chain(produce_increasing_integers(1, max=3), produce_alphabet(1, max=3))
     ) as pipeline, pipeline.tap() as aiter:
         result = [i async for i in aiter]
         assert result == [0, 1, 2, 'a', 'b', 'c']
 
-async def test_merge(autojump_clock):
+async def test_merge(produce_increasing_integers, produce_alphabet, autojump_clock):
     async with Pipeline.create(
         Merge(produce_increasing_integers(1, max=3), produce_alphabet(1, max=3, delay=0.1))
     ) as pipeline, pipeline.tap() as aiter:
         result = [i async for i in aiter]
         assert result == [0, 'a', 1, 'b', 2, 'c']
 
-async def test_merge_section(autojump_clock):
+async def test_merge_section(produce_increasing_integers, autojump_clock):
     async with Pipeline.create(
         Merge(produce_increasing_integers(1, max=3, delay=0.5), Repeat(1, default='a'))
     ) as pipeline, pipeline.tap() as aiter:
@@ -28,7 +26,7 @@ async def test_merge_section(autojump_clock):
                 break
     assert result == ['a', 0, 'a', 1, 'a', 2]
 
-async def test_merge_pipeline_section(autojump_clock):
+async def test_merge_pipeline_section(produce_increasing_integers, autojump_clock):
     async with Pipeline.create(
         Merge(produce_increasing_integers(1, max=3, delay=0.5),
             (
@@ -43,7 +41,7 @@ async def test_merge_pipeline_section(autojump_clock):
                 break
     assert result == ['ax', 0, 'ax', 1, 'ax', 2]
 
-async def test_zip(autojump_clock):
+async def test_zip(produce_increasing_integers, produce_alphabet, autojump_clock):
     async with Pipeline.create(
         Zip(produce_increasing_integers(1), produce_alphabet(0.9))
     ) as pipeline:
@@ -51,7 +49,7 @@ async def test_zip(autojump_clock):
             results = [item async for item in aiter]
             assert results == [(0,'a'), (1, 'b'), (2, 'c')]
 
-async def test_zip_pipeline_section(autojump_clock):
+async def test_zip_pipeline_section(produce_increasing_integers, produce_alphabet, autojump_clock):
     async with Pipeline.create(
         Zip(
         (
@@ -63,10 +61,10 @@ async def test_zip_pipeline_section(autojump_clock):
             Map(lambda item: item + 'x')
         ))
     ) as pipeline, pipeline.tap() as aiter:
-            results = [item async for item in aiter]
-            assert results == [(2,'ax'), (3, 'bx'), (4, 'cx')]
+        results = [item async for item in aiter]
+        assert results == [(2,'ax'), (3, 'bx'), (4, 'cx')]
 
-async def test_zip_latest(autojump_clock):
+async def test_zip_latest(produce_increasing_integers, produce_alphabet, autojump_clock):
     async with Pipeline.create(
         ZipLatest(
             produce_increasing_integers(1, max=3),
@@ -75,7 +73,7 @@ async def test_zip_latest(autojump_clock):
         result = [item async for item in aiter]
         assert result == [(0, None),  (0, 'a'), (1, 'a'), (1, 'b'), (2, 'b')]
 
-async def test_zip_latest_pipeline_section(autojump_clock):
+async def test_zip_latest_pipeline_section(produce_increasing_integers, produce_alphabet, autojump_clock):
     async with Pipeline.create(
         ZipLatest(
         (

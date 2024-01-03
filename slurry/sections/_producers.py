@@ -3,9 +3,9 @@ from time import time
 from typing import Any
 
 import trio
-from async_generator import aclosing
 
 from ..environments import TrioSection
+from .._utils import safe_aclosing
 
 class Repeat(TrioSection):
     """Yields a single item repeatedly at regular intervals.
@@ -54,7 +54,7 @@ class Repeat(TrioSection):
                 running_repeater = await nursery.start(repeater, self.default)
 
             if input:
-                async with aclosing(input) as aiter:
+                async with safe_aclosing(input) as aiter:
                     async for item in aiter:
                         if running_repeater:
                             running_repeater.cancel()

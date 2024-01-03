@@ -5,13 +5,13 @@ from slurry import Pipeline
 from slurry.sections import Map
 from slurry.environments import TrioSection
 
-from .fixtures import produce_increasing_integers
+from .fixtures import AsyncIteratorWithoutAclose
 
 async def test_pipeline_create(autojump_clock):
     async with Pipeline.create(None):
         await trio.sleep(1)
 
-async def test_pipeline_passthrough(autojump_clock):
+async def test_pipeline_passthrough(produce_increasing_integers, autojump_clock):
     async with Pipeline.create(produce_increasing_integers(1)) as pipeline:
         async with pipeline.tap() as aiter:
             result = [i async for i in aiter]
@@ -47,20 +47,19 @@ async def test_early_tap_closure_section(autojump_clock):
                 assert isinstance(i, int)
                 break
 
-async def test_welding(autojump_clock):
+async def test_welding(produce_increasing_integers, autojump_clock):
     async with Pipeline.create(
         produce_increasing_integers(1),
-        (Map(lambda i: i+1),)
-        ) as pipeline:
+        (Map(lambda i: i + 1),)
+    ) as pipeline:
         async with pipeline.tap() as aiter:
             result = [i async for i in aiter]
             assert result == [1, 2, 3]
 
-async def test_welding_two_generator_functions_not_allowed(autojump_clock):
+async def test_welding_two_generator_functions_not_allowed(produce_increasing_integers, autojump_clock):
     with pytest.raises(ValueError):
         async with Pipeline.create(
             produce_increasing_integers(1),
             produce_increasing_integers(1),
         ) as pipeline, pipeline.tap() as aiter:
             result = [i async for i in aiter]
-
