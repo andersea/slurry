@@ -1,7 +1,7 @@
 """Implements a section that runs in an independent python proces."""
 
 from multiprocessing import Process, SimpleQueue
-from typing import Any, Iterable, Callable
+from typing import Any, Iterable, Callable, cast
 
 import trio
 
@@ -39,13 +39,15 @@ class ProcessSection(SyncSection):
         process = Process(target=self._process_run_target,
                           args=(input_queue, output_queue))
 
-        async def sender():
-            async for item in input:
-                await trio.to_thread.run_sync(input_queue.put, (item,))
-            await trio.to_thread.run_sync(input_queue.put, ())
-
         async with trio.open_nursery() as nursery:
             if input:
+                input_queue = cast(SimpleQueue, input_queue)
+
+                async def sender():
+                    async for item in input:
+                        await trio.to_thread.run_sync(input_queue.put, (item,))
+                    await trio.to_thread.run_sync(input_queue.put, ())
+
                 nursery.start_soon(sender)
             process.start()
             while True:
