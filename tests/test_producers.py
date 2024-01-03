@@ -73,3 +73,10 @@ async def test_insert_value(autojump_clock):
         start_time = trio.current_time()
         results = [(v, trio.current_time() - start_time) async for v in aiter]
         assert results == [('n', 0), ('a', 1), ('b', 2), ('c', 3)]
+
+async def test_insert_value_no_input(autojump_clock):
+    async with Pipeline.create(
+            InsertValue('n')
+    ) as pipeline, pipeline.tap() as aiter:
+        results = [v async for v in aiter]
+        assert results == ['n']
