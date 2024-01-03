@@ -5,6 +5,7 @@ from typing import Any, AsyncIterable, Optional, Sequence
 import trio
 
 from .abc import Section
+from .._types import SupportsAclose
 
 def weld(nursery, *sections: Sequence["PipelineSection"]) -> AsyncIterable[Any]:
     """
@@ -22,7 +23,7 @@ def weld(nursery, *sections: Sequence["PipelineSection"]) -> AsyncIterable[Any]:
             await section.pump(input, output.send)
         except trio.BrokenResourceError:
             pass
-        if input:
+        if input and isinstance(input, SupportsAclose):
             await input.aclose()
         await output.aclose()
 
