@@ -127,5 +127,6 @@ class InsertValue(TrioSection):
 
     async def refine(self, input, output):
         await output(self.value)
-        async for item in input:
-            await output(item)
+        if input:
+            async for item in input:
+                await output(item)
