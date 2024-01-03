@@ -90,13 +90,13 @@ class Group(TrioSection):
     :type reducer: Optional[Callable[[Sequence[Any]], Any]]
     """
     def __init__(self, interval: float, source: Optional[AsyncIterable[Any]] = None, *,
-                 max_size: int = math.inf,
+                 max_size: Optional[int] = None,
                  mapper: Optional[Callable[[Any], Any]] = None,
                  reducer: Optional[Callable[[Sequence[Any]], Any]] = None):
         super().__init__()
         self.source = source
         self.interval = interval
-        self.max_size = max_size
+        self.max_size = math.inf if max_size is None else max_size
         self.mapper = mapper
         self.reducer = reducer
 

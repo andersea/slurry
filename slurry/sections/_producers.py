@@ -1,6 +1,6 @@
 """Pipeline sections that produce data streams."""
 from time import time
-from typing import Any
+from typing import Any, AsyncIterable, cast
 
 import trio
 from async_generator import aclosing
@@ -94,6 +94,7 @@ class Metronome(TrioSection):
             # pylint: disable=line-too-long
             raise RuntimeError('If Repeat is used as first section,  default value must be provided.')
 
+        input = cast(AsyncIterable[Any], input)
         item = self.default if self.has_default else None
 
         async def pull_task(cancel_scope, *, task_status=trio.TASK_STATUS_IGNORED):

@@ -1,21 +1,20 @@
 """Contains the `weld` utility function for composing sections."""
 
-from typing import Any, AsyncIterable, Optional, Sequence
+from typing import Any, AsyncIterable, Optional, cast
 
 import trio
 
 from .abc import Section
-from .._types import SupportsAclose
+from .._types import PipelineSection, SupportsAclose
 
-def weld(nursery, *sections: Sequence["PipelineSection"]) -> AsyncIterable[Any]:
+def weld(nursery, *sections: PipelineSection) -> AsyncIterable[Any]:
     """
     Connects the individual parts of a sequence of pipeline sections together and starts pumps for
     individual Sections. It returns an async iterable which yields results of the sequence.
 
     :param nursery: The nursery that runs individual pipeline section pumps.
     :type nursery: :class:`trio.Nursery`
-    :param \\*sections: A sequence of pipeline sections.
-    :type \\*sections: Sequence[PipelineSection]
+    :param PipelineSection \\*sections: Pipeline sections.
     """
 
     async def pump(section, input: Optional[AsyncIterable[Any]], output: trio.MemorySendChannel):
@@ -44,4 +43,4 @@ def weld(nursery, *sections: Sequence["PipelineSection"]) -> AsyncIterable[Any]:
             output = section
         section_input = output
 
-    return output
+    return cast(AsyncIterable[Any], output)

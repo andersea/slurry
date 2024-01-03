@@ -1,13 +1,15 @@
 """Contains the main Slurry ``Pipeline`` class."""
 
 import math
-from typing import AsyncContextManager, Sequence
+from typing import Any, AsyncGenerator
+from contextlib import asynccontextmanager
 
 import trio
-from async_generator import aclosing, asynccontextmanager
+from async_generator import aclosing
 
 from .sections.weld import weld
 from ._tap import Tap
+from ._types import PipelineSection
 
 class Pipeline:
     """The main Slurry ``Pipeline`` class.
@@ -22,7 +24,7 @@ class Pipeline:
     * ``nursery``: The :class:`trio.Nursery` that is executing the pipeline.
 
     """
-    def __init__(self, *sections: Sequence["PipelineSection"],
+    def __init__(self, *sections: PipelineSection,
                  nursery: trio.Nursery,
                  enabled: trio.Event):
         self.sections = sections
@@ -32,10 +34,10 @@ class Pipeline:
 
     @classmethod
     @asynccontextmanager
-    async def create(cls, *sections: Sequence["PipelineSection"]) -> AsyncContextManager["Pipeline"]:
+    async def create(cls, *sections: PipelineSection) -> AsyncGenerator["Pipeline", None]:
         """Creates a new pipeline context and adds the given section sequence to it.
 
-        :param Sequence[PipelineSection] \\*sections: One or more
+        :param PipelineSection \\*sections: One or more
           :mod:`PipelineSection <slurry.sections.weld>` compatible objects.
         """
         async with trio.open_nursery() as nursery:
@@ -69,7 +71,7 @@ class Pipeline:
             max_buffer_size: int = 0,
             timeout: float = math.inf,
             retrys: int = 0,
-            start: bool = True) -> trio.MemoryReceiveChannel:
+            start: bool = True) -> trio.MemoryReceiveChannel[Any]:
         # pylint: disable=line-too-long
         """Create a new output channel for this pipeline.
 
@@ -103,7 +105,7 @@ class Pipeline:
             self._enabled.set()
         return receive_channel
 
-    def extend(self, *sections: Sequence["PipelineSection"], start: bool = False) -> "Pipeline":
+    def extend(self, *sections: PipelineSection, start: bool = False) -> "Pipeline":
         """Extend this pipeline into a new pipeline.
 
         An extension will add a tap to the existing pipeline and use this tap as input to the
@@ -112,7 +114,7 @@ class Pipeline:
         Extensions can be added dynamically during runtime. The data feed
         will start at the current position. Old events won't be replayed.
 
-        :param Sequence[PipelineSection] \\*sections: One or more pipeline sections.
+        :param PipelineSection \\*sections: One or more pipeline sections.
         :param bool start: Start processing when adding this extension. (default: ``False``)
         """
         pipeline = Pipeline(
