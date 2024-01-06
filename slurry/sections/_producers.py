@@ -94,16 +94,17 @@ class Metronome(TrioSection):
             # pylint: disable=line-too-long
             raise RuntimeError('If Repeat is used as first section,  default value must be provided.')
 
-        input = cast(AsyncIterable[Any], input)
         item = self.default if self.has_default else None
 
         async def pull_task(cancel_scope, *, task_status=trio.TASK_STATUS_IGNORED):
             nonlocal item
-            async for item in input:
-                task_status.started()
-                break
-            async for item in input:
-                pass
+            if input:
+                async for item in input:
+                    break
+            task_status.started()
+            if input:
+                async for item in input:
+                    pass
             cancel_scope.cancel()
 
         async with trio.open_nursery() as nursery:
