@@ -1,15 +1,14 @@
-from typing import AsyncGenerator, AsyncIterator, TypeVar
+from typing import AsyncGenerator, TypeVar
 
-from ._types import SupportsAclose
+from ._types import AcloseableAsyncIterator
 
 from contextlib import asynccontextmanager
 
 _T = TypeVar("_T")
 
 @asynccontextmanager
-async def safe_aclosing(obj: AsyncIterator[_T]) -> AsyncGenerator[AsyncIterator[_T], None]:
+async def aclosing(obj: AcloseableAsyncIterator[_T]) -> AsyncGenerator[AcloseableAsyncIterator[_T], None]:
     try:
         yield obj
     finally:
-        if isinstance(obj, SupportsAclose):
-            await obj.aclose()
+        await obj.aclose()

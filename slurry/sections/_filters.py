@@ -1,10 +1,11 @@
 """Pipeline sections that filters the incoming items."""
-from typing import Any, AsyncIterable, Callable, Hashable, Optional, Union
+from typing import Any, Callable, Hashable, Optional, Union
 
-from async_generator import aclosing
 import trio
 
 from ..environments import TrioSection
+from .._types import AsyncIterableWithAcloseableIterator
+from .._utils import aclosing
 
 class Skip(TrioSection):
     """Skips the first ``count`` items in an asynchronous sequence.
@@ -14,9 +15,9 @@ class Skip(TrioSection):
     :param count: Number of items to skip
     :type count: int
     :param source: Input source if starting section.
-    :type source: Optional[AsyncIterable[Any]]
+    :type source: Optional[AsyncIterableWithAcloseableIterator[Any]]
     """
-    def __init__(self, count: int, source: Optional[AsyncIterable[Any]] = None):
+    def __init__(self, count: int, source: Optional[AsyncIterableWithAcloseableIterator[Any]] = None):
         super().__init__()
         self.count = count
         self.source = source
@@ -49,9 +50,9 @@ class SkipWhile(TrioSection):
     :param pred: Predicate function.
     :type pred: Callable[[Any], bool]
     :param source: Input source if starting section.
-    :type source: Optional[AsyncIterable[Any]]
+    :type source: Optional[AsyncIterableWithAcloseableIterator[Any]]
     """
-    def __init__(self, pred, source: Optional[AsyncIterable[Any]] = None):
+    def __init__(self, pred, source: Optional[AsyncIterableWithAcloseableIterator[Any]] = None):
         super().__init__()
         self.pred = pred
         self.source = source
@@ -64,7 +65,7 @@ class SkipWhile(TrioSection):
         else:
             raise RuntimeError('No input provided.')
 
-        async with aclosing(source) as aiter:
+        async with aclosing(source.__aiter__()) as aiter:
             async for item in aiter:
                 if not self.pred(item):
                     await output(item)
@@ -83,9 +84,9 @@ class Filter(TrioSection):
     :param func: Matching function.
     :type func: Callable[[Any], bool]
     :param source: Source if used as a starting section.
-    :type source: Optional[AsyncIterable[Any]]
+    :type source: Optional[AsyncIterableWithAcloseableIterator[Any]]
     """
-    def __init__(self, func, source: Optional[AsyncIterable[Any]] = None):
+    def __init__(self, func, source: Optional[AsyncIterableWithAcloseableIterator[Any]] = None):
         super().__init__()
         self.func = func
         self.source = source
@@ -98,7 +99,7 @@ class Filter(TrioSection):
         else:
             raise RuntimeError('No input provided.')
 
-        async with aclosing(source) as aiter:
+        async with aclosing(source.__aiter__()) as aiter:
             async for item in aiter:
                 if self.func(item):
                     await output(item)
@@ -117,9 +118,9 @@ class Changes(TrioSection):
         Items are compared using the != operator.
 
     :param source: Source if used as a starting section.
-    :type source: Optional[AsyncIterable[Any]]
+    :type source: Optional[AsyncIterableWithAcloseableIterator[Any]]
     """
-    def __init__(self, source: Optional[AsyncIterable[Any]] = None):
+    def __init__(self, source: Optional[AsyncIterableWithAcloseableIterator[Any]] = None):
         super().__init__()
         self.source = source
 
@@ -133,7 +134,7 @@ class Changes(TrioSection):
 
         token = object()
         last = token
-        async with aclosing(source) as aiter:
+        async with aclosing(source.__aiter__()) as aiter:
             async for item in aiter:
                 if last is token or item != last:
                     last = item
@@ -155,13 +156,13 @@ class RateLimit(TrioSection):
     :param interval: Minimum number of seconds between each sent item.
     :type interval: float
     :param source: Input when used as first section.
-    :type source: Optional[AsyncIterable[Any]]
+    :type source: Optional[AsyncIterableWithAcloseableIterator[Any]]
     :param subject: Subject for per subject rate limiting.
     :type subject: Optional[]
     """
     def __init__(self,
                  interval,
-                 source: Optional[AsyncIterable[Any]] = None,
+                 source: Optional[AsyncIterableWithAcloseableIterator[Any]] = None,
                  *,
                  subject: Optional[Union[Hashable, Callable[[Any], Hashable]]] = None):
         super().__init__()
@@ -185,7 +186,7 @@ class RateLimit(TrioSection):
             get_subject = lambda item: item[self.subject]
 
         timestamps = {}
-        async with aclosing(source) as aiter:
+        async with aclosing(source.__aiter__()) as aiter:
             async for item in aiter:
                 now = trio.current_time()
                 subject = get_subject(item)

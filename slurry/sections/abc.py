@@ -1,12 +1,16 @@
 """ Abstract Base Classes for building pipeline sections. """
 from abc import ABC, abstractmethod
-from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional
+from typing import Any, Awaitable, Callable, Iterable, Optional
+
+from .._types import AsyncIterableWithAcloseableIterator
 
 class Section(ABC):
     """Defines the basic environment api."""
 
     @abstractmethod
-    async def pump(self, input: Optional[AsyncIterable[Any]], output: Callable[[Any], Awaitable[None]]):
+    async def pump(
+        self, input: Optional[AsyncIterableWithAcloseableIterator[Any]], output: Callable[[Any], Awaitable[None]]
+    ):
         """The pump method contains the machinery that takes input from previous sections, or
         any asynchronous iterable, processes it and pushes it to the output.
 
@@ -16,7 +20,7 @@ class Section(ABC):
 
         :param input: The input data feed. Will be ``None`` for the first ``Section``, as the first
             ``Section`` is expected to supply it's own input.
-        :type input: Optional[AsyncIterable[Any]]
+        :type input: Optional[AsyncIterableWithAcloseableIterator[Any]]
         :param output: An awaitable callable used to send output.
         :type output: Callable[[Any], Awaitable[None]]
         """
@@ -25,13 +29,15 @@ class AsyncSection(Section):
     """AsyncSection defines an abc for sections that are designed to run in an async event loop."""
 
     @abstractmethod
-    async def refine(self, input: Optional[AsyncIterable[Any]], output: Callable[[Any], Awaitable[None]]):
+    async def refine(
+        self, input: Optional[AsyncIterableWithAcloseableIterator[Any]], output: Callable[[Any], Awaitable[None]]
+    ):
         """The async section refine method must contain the logic that iterates the input, processes
         the indidual items, and feeds results to the output.
 
         :param input: The input data feed. Will be ``None`` for the first ``Section``, as the first
             ``Section`` is expected to supply it's own input.
-        :type input: Optional[AsyncIterable[Any]]
+        :type input: Optional[AsyncIterableWithAcloseableIterator[Any]]
         :param output: An awaitable callable used to send output.
         :type output: Callable[[Any], Awaitable[None]]
         """

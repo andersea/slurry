@@ -3,11 +3,11 @@ import builtins
 import itertools
 
 import trio
-from async_generator import aclosing
 
 from ..environments import TrioSection
 from .weld import weld
 from .._types import PipelineSection
+from .._utils import aclosing
 
 class Chain(TrioSection):
     """Chains input from one or more sources. Any valid ``PipelineSection`` is an allowed source.
@@ -40,7 +40,7 @@ class Chain(TrioSection):
             sources = self.sources
         async with trio.open_nursery() as nursery:
             for source in sources:
-                async with aclosing(weld(nursery, source)) as agen:
+                async with aclosing(weld(nursery, source).__aiter__()) as agen:
                     async for item in agen:
                         await output(item)
 
@@ -66,7 +66,7 @@ class Merge(TrioSection):
         async with trio.open_nursery() as nursery:
 
             async def pull_task(source):
-                async with aclosing(weld(nursery, source)) as aiter:
+                async with aclosing(weld(nursery, source).__aiter__()) as aiter:
                     async for item in aiter:
                         await output(item)
 
@@ -155,7 +155,8 @@ class ZipLatest(TrioSection):
         default value to output, until an input has arrived on a source. Defaults to ``None``.
     :type default: Any
     :param monitor: Additional asynchronous sequences to monitor.
-    :type monitor: Optional[Union[AsyncIterable[Any], Sequence[AsyncIterable[Any]]]]
+    :type monitor: Optional[Union[AsyncIterableWithAcloseableIterator[Any],
+        Sequence[AsyncIterableWithAcloseableIterator[Any]]]]
     :param place_input: Position of the pipeline input source in the output tuple. Options:
         ``'first'`` (default)|``'last'``
     :type place_input: string
@@ -203,7 +204,7 @@ class ZipLatest(TrioSection):
         async with trio.open_nursery() as nursery:
 
             async def pull_task(index, source, monitor=False):
-                async with aclosing(weld(nursery, source)) as aiter:
+                async with aclosing(weld(nursery, source).__aiter__()) as aiter:
                     async for item in aiter:
                         results[index] = item
                         ready[index] = True

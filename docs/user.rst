@@ -38,9 +38,9 @@ pipeline out of individual sections. A ``PipelineSection`` is any object that is
 function. This currently includes the following types:
 
 AsyncIterables
-  Async iterables are valid only as the very first ``PipelineSection``. Subsequent
-  sections will use this async iterable as input source. Placing an ``AsyncIterable`` into the middle of
-  a sequence of pipeline sections, will cause a ``ValueError``.
+  Async iterables are valid only as the very first ``PipelineSection``, and must support the ``aclose()``
+  method (nearly all do). Subsequent sections will use this async iterable as input source. Placing an
+  ``AsyncIterable`` into the middle of a sequence of pipeline sections, will cause a ``ValueError``.
 Sections
   Any :class:`Section <slurry.sections.abc.Section>` abc subclass is a valid ``PipelineSection``, at any
   position in the pipeline.

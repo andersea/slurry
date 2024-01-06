@@ -1,11 +1,11 @@
 """Pipeline sections that produce data streams."""
 from time import time
-from typing import Any, AsyncIterable, cast
+from typing import Any
 
 import trio
-from async_generator import aclosing
 
 from ..environments import TrioSection
+from .._utils import aclosing
 
 class Repeat(TrioSection):
     """Yields a single item repeatedly at regular intervals.
@@ -54,7 +54,7 @@ class Repeat(TrioSection):
                 running_repeater = await nursery.start(repeater, self.default)
 
             if input:
-                async with aclosing(input) as aiter:
+                async with aclosing(input.__aiter__()) as aiter:
                     async for item in aiter:
                         if running_repeater:
                             running_repeater.cancel()
@@ -66,7 +66,7 @@ class Metronome(TrioSection):
 
     If used as a middle section, the input can be used to set the value that is sent. When
     an input is received, it is stored and send at the next tick of the clock. If multiple
-    inputs are received during a tick, only the latest is sent. The preceeding inputs are
+    inputs are received during a tick, only the latest is sent. The preceding inputs are
     dropped.
 
     When an input is used, closure of the input stream will cause the metronome to close as well.

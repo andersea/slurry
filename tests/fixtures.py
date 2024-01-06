@@ -86,18 +86,3 @@ class AsyncNonIteratorIterable:
 
     def __aiter__(self):
         return self.source_aiterable.__aiter__()
-
-class AsyncIteratorWithoutAclose:
-    def __init__(self, source_aiterable):
-        self.source_aiter = source_aiterable.__aiter__()
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        try:
-            return await self.source_aiter.__anext__()
-        except StopAsyncIteration:
-            if hasattr(self.source_aiter, "aclose"):
-                await self.source_aiter.aclose()
-            raise

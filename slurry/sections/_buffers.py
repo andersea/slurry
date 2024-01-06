@@ -1,12 +1,13 @@
 """Pipeline sections with age- and volume-based buffers."""
 from collections import deque
 import math
-from typing import Any, AsyncIterable, Callable, Optional, Sequence
+from typing import Any, Callable, Optional, Sequence
 
 import trio
-from async_generator import aclosing
 
 from ..environments import TrioSection
+from .._types import AsyncIterableWithAcloseableIterator
+from .._utils import aclosing
 
 class Window(TrioSection):
     """Window buffer with size and age limits.
@@ -26,13 +27,13 @@ class Window(TrioSection):
     :param max_size: The maximum buffer size.
     :type max_size: int
     :param source: Input when used as first section.
-    :type source: Optional[AsyncIterable[Any]]
+    :type source: Optional[AsyncIterableWithAcloseableIterator[Any]]
     :param max_age: Maximum item age in seconds. (default: unlimited)
     :type max_age: float
     :param min_size: Minimum amount of items in the buffer to trigger an output.
     :type min_size: int
     """
-    def __init__(self, max_size: int, source: Optional[AsyncIterable[Any]] = None, *,
+    def __init__(self, max_size: int, source: Optional[AsyncIterableWithAcloseableIterator[Any]] = None, *,
                  max_age: float = math.inf,
                  min_size: int = 1):
         super().__init__()
@@ -51,7 +52,7 @@ class Window(TrioSection):
 
         buf = deque()
 
-        async with aclosing(source) as aiter:
+        async with aclosing(source.__aiter__()) as aiter:
             async for item in aiter:
                 now = trio.current_time()
                 buf.append((item, now))
@@ -80,7 +81,7 @@ class Group(TrioSection):
     :param interval: Time in seconds from when an item arrives until the buffer is sent.
     :type interval: float
     :param source: Input when used as first section.
-    :type source: Optional[AsyncIterable[Any]]
+    :type source: Optional[AsyncIterableWithAcloseableIterator[Any]]
     :param max_size: Maximum number of items in buffer, which when reached, will cause the buffer
         to be sent.
     :type max_size: int
@@ -89,7 +90,7 @@ class Group(TrioSection):
     :param reducer: Optional reducer function used to transform the buffer to a single value.
     :type reducer: Optional[Callable[[Sequence[Any]], Any]]
     """
-    def __init__(self, interval: float, source: Optional[AsyncIterable[Any]] = None, *,
+    def __init__(self, interval: float, source: Optional[AsyncIterableWithAcloseableIterator[Any]] = None, *,
                  max_size: Optional[int] = None,
                  mapper: Optional[Callable[[Any], Any]] = None,
                  reducer: Optional[Callable[[Sequence[Any]], Any]] = None):
@@ -111,7 +112,7 @@ class Group(TrioSection):
 
             send_channel, receive_channel = trio.open_memory_channel(0)
             async def pull_task():
-                async with send_channel, aclosing(source) as aiter:
+                async with send_channel, aclosing(source.__aiter__()) as aiter:
                     async for item in aiter:
                         await send_channel.send(item)
             nursery.start_soon(pull_task)
@@ -152,9 +153,9 @@ class Delay(TrioSection):
     :param interval: Number of seconds that each item is delayed.
     :type interval: float
     :param source: Input when used as first section.
-    :type source: Optional[AsyncIterable[Any]]
+    :type source: Optional[AsyncIterableWithAcloseableIterator[Any]]
     """
-    def __init__(self, interval: float, source: Optional[AsyncIterable[Any]] = None):
+    def __init__(self, interval: float, source: Optional[AsyncIterableWithAcloseableIterator[Any]] = None):
         super().__init__()
         self.source = source
         self.interval = interval
@@ -169,7 +170,7 @@ class Delay(TrioSection):
         buffer_input_channel, buffer_output_channel = trio.open_memory_channel(math.inf)
 
         async def pull_task():
-            async with buffer_input_channel, aclosing(source) as aiter:
+            async with buffer_input_channel, aclosing(source.__aiter__()) as aiter:
                 async for item in aiter:
                     await buffer_input_channel.send((item, trio.current_time() + self.interval))
 

@@ -5,11 +5,11 @@ from typing import Any, AsyncGenerator
 from contextlib import asynccontextmanager
 
 import trio
-from async_generator import aclosing
 
 from .sections.weld import weld
 from ._tap import Tap
 from ._types import PipelineSection
+from ._utils import aclosing
 
 class Pipeline:
     """The main Slurry ``Pipeline`` class.
@@ -54,7 +54,7 @@ class Pipeline:
             output = weld(nursery, *self.sections)
 
             # Output to taps
-            async with aclosing(output) as aiter:
+            async with aclosing(output.__aiter__()) as aiter:
                 async for item in aiter:
                     self._taps = set(filter(lambda tap: not tap.closed, self._taps))
                     if not self._taps:
