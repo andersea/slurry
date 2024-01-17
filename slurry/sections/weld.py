@@ -21,7 +21,7 @@ def weld(nursery, *sections: PipelineSection) -> AsyncIterable[Any]:
             await section.pump(input, output.send)
         except trio.BrokenResourceError:
             pass
-        if input:
+        if input and hasattr(input, "aclose") and callable(input.aclose):
             await input.aclose()
         await output.aclose()
 

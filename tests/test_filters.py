@@ -1,11 +1,18 @@
 from slurry import Pipeline
 from slurry.sections import Merge, RateLimit, Skip, SkipWhile, Filter, Changes
 
-from .fixtures import produce_increasing_integers, produce_mappings
+from .fixtures import AsyncNonIteratorIterable, produce_increasing_integers, produce_mappings
 
 async def test_skip(autojump_clock):
     async with Pipeline.create(
         Skip(5, produce_increasing_integers(1, max=10))
+    ) as pipeline, pipeline.tap() as aiter:
+        result = [i async for i in aiter]
+        assert result == [5, 6, 7, 8, 9]
+
+async def test_skip_input_non_iterator_iterable(autojump_clock):
+    async with Pipeline.create(
+            Skip(5, AsyncNonIteratorIterable(produce_increasing_integers(1, max=10)))
     ) as pipeline, pipeline.tap() as aiter:
         result = [i async for i in aiter]
         assert result == [5, 6, 7, 8, 9]
