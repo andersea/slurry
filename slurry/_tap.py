@@ -12,7 +12,7 @@ class Tap:
         :meth:`slurry.pipeline.Pipeline.tap`.
 
     :param send_channel: The output to which items are sent.
-    :type send_channel: trio.MemorySendChannel
+    :type send_channel: trio.MemorySendChannel[Any]
     :param timeout: Seconds to wait for receiver to respond.
     :type timeout: float
     :param retrys: Number of times to reattempt a send that timed out.

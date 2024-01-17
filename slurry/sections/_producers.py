@@ -66,7 +66,7 @@ class Metronome(TrioSection):
 
     If used as a middle section, the input can be used to set the value that is sent. When
     an input is received, it is stored and send at the next tick of the clock. If multiple
-    inputs are received during a tick, only the latest is sent. The preceeding inputs are
+    inputs are received during a tick, only the latest is sent. The preceding inputs are
     dropped.
 
     When an input is used, closure of the input stream will cause the metronome to close as well.

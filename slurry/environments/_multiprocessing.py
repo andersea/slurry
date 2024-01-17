@@ -1,7 +1,7 @@
 """Implements a section that runs in an independent python proces."""
 
 from multiprocessing import Process, SimpleQueue
-from typing import Any, Iterable, Callable
+from typing import Any, AsyncIterable, Awaitable, Callable, Optional
 
 import trio
 
@@ -19,7 +19,7 @@ class ProcessSection(SyncSection):
         <https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled>`_.
     """
 
-    async def pump(self, input: Iterable[Any], output: Callable[[Any], None]):
+    async def pump(self, input: Optional[AsyncIterable[Any]], output: Callable[[Any], Awaitable[None]]):
         """
         The ``ProcessSection`` pump method works similar to the threaded version, however
         since communication between processes is not as simple as it is between threads,

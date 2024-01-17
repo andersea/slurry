@@ -1,12 +1,12 @@
 """Pipeline sections for combining multiple inputs into a single output."""
 import builtins
 import itertools
-from typing import Any, AsyncIterable, Sequence
 
 import trio
 from async_generator import aclosing
 
 from ..environments import TrioSection
+from .abc import PipelineSection
 from .weld import weld
 
 class Chain(TrioSection):
@@ -21,13 +21,12 @@ class Chain(TrioSection):
         By default, the input is added as the first source. If the input is added last instead
         of first, it will cause backpressure to be applied upstream.
 
-    :param sources: One or more ``PipelineSection`` that will be chained together.
-    :type sources: Sequence[PipelineSection]
+    :param PipelineSection \\*sources: One or more ``PipelineSection`` that will be chained together.
     :param place_input: Iteration priority of the pipeline input source. Options:
         ``'first'`` (default) \\| ``'last'``.
     :type place_input: string
     """
-    def __init__(self, *sources: Sequence["PipelineSection"], place_input='first'):
+    def __init__(self, *sources: PipelineSection, place_input: str = 'first'):
         super().__init__()
         self.sources = sources
         self.place_input = _validate_place_input(place_input)
@@ -57,10 +56,10 @@ class Merge(TrioSection):
     Sources can be pipeline sections, which will be treated as first sections, with
     no input. Merge will take care of running the pump task for these sections.
 
-    :param sources: One or more async iterables or sections who's contents will be merged.
-    :type sources: Sequence[PipelineSection]
+    :param PipelineSection \\*sources: One or more async iterables or sections whose contents
+        will be merged.
     """
-    def __init__(self, *sources: Sequence["PipelineSection"]):
+    def __init__(self, *sources: PipelineSection):
         super().__init__()
         self.sources = sources
 
@@ -90,13 +89,13 @@ class Zip(TrioSection):
         If sources are out of sync, the fastest source will have to wait for the slowest, which
         will cause backpressure.
 
-    :param sources:  One or more ``PipelineSection``, who's contents will be zipped.
-    :type sources: Sequence[PipelineSection]
+    :param PipelineSection \\*sources:  One or more ``PipelineSection``, whose contents will be
+        zipped.
     :param place_input:  Position of the pipeline input source in the output tuple. Options:
         ``'first'`` (default) \\| ``'last'``.
     :type place_input: string
     """
-    def __init__(self, *sources: Sequence["PipelineSection"], place_input='first'):
+    def __init__(self, *sources: PipelineSection, place_input: str = 'first'):
         super().__init__()
         self.sources = sources
         self.place_input = _validate_place_input(place_input)
@@ -145,11 +144,11 @@ class ZipLatest(TrioSection):
     added as an input.
 
     .. Note::
-        If any single source is exchausted, all remaining sources will be forcibly closed, and
+        If any single source is exhausted, all remaining sources will be forcibly closed, and
         the pipeline will stop.
 
-    :param sources: One or more async iterables that will be zipped together.
-    :type sources: Sequence[AsyncIterable[Any]]
+    :param PipelineSection \\*sources: One or more ``PipelineSection`` that will be zipped
+        together.
     :param partial: If ``True`` (default) output will be sent as soon as the first input arrives.
         Otherwise, all main sources must send at least one item, before an output is generated.
     :type partial: bool
@@ -165,7 +164,7 @@ class ZipLatest(TrioSection):
         Defaults to ``False``
     :type monitor_input: bool
     """
-    def __init__(self, *sources: Sequence["PipelineSection"],
+    def __init__(self, *sources: PipelineSection,
                  partial=True,
                  default=None,
                  monitor=(),

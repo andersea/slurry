@@ -90,7 +90,7 @@ class Group(TrioSection):
     :type reducer: Optional[Callable[[Sequence[Any]], Any]]
     """
     def __init__(self, interval: float, source: Optional[AsyncIterable[Any]] = None, *,
-                 max_size: int = math.inf,
+                 max_size: float = math.inf,
                  mapper: Optional[Callable[[Any], Any]] = None,
                  reducer: Optional[Callable[[Sequence[Any]], Any]] = None):
         super().__init__()
