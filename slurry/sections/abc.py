@@ -1,6 +1,8 @@
 """ Abstract Base Classes for building pipeline sections. """
 from abc import ABC, abstractmethod
-from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional
+from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional, Tuple, Union
+
+PipelineSection = Union["Section", Tuple["PipelineSection", ...]]
 
 class Section(ABC):
     """Defines the basic environment api."""
