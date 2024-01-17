@@ -145,7 +145,7 @@ class ZipLatest(TrioSection):
     added as an input.
 
     .. Note::
-        If any single source is exchausted, all remaining sources will be forcibly closed, and
+        If any single source is exhausted, all remaining sources will be forcibly closed, and
         the pipeline will stop.
 
     :param sources: One or more async iterables that will be zipped together.
