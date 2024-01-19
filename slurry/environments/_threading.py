@@ -28,9 +28,10 @@ class ThreadSection(SyncSection):
             """Wrapper for turning an async iterable into a blocking generator."""
             if input is None:
                 return
+            input_aiter = input.__aiter__()
             try:
                 while True:
-                    yield trio.from_thread.run(input.__anext__)
+                    yield trio.from_thread.run(input_aiter.__anext__)
             except StopAsyncIteration:
                 pass
 

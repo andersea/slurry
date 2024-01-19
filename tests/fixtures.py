@@ -79,3 +79,10 @@ class FibonacciSection(ProcessSection):
     def refine(self, input: Iterable[Any], output: Callable[[Any], None]):
         for i in range(self.i):
             output(self.fibonacci(i))
+
+class AsyncNonIteratorIterable:
+    def __init__(self, source_aiterable):
+        self.source_aiterable = source_aiterable
+
+    def __aiter__(self):
+        return self.source_aiterable.__aiter__()
