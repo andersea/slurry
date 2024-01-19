@@ -1,5 +1,13 @@
 # History
 
+## v1.3.2
+
+* Add support for python 3.11 and 3.12
+* Updated dependencies
+* Various build fixes for github actions and readthedocs
+* Improved typings across the board
+* Fix unsafe use of iterables
+
 ## v1.3.1
 
 * Add support for python 3.10, remove support for python 3.7.

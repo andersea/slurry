@@ -10,4 +10,4 @@ Development Lead
 Contributors
 ------------
 
-None yet. Why not be the first?
+* Mike Nerone `@mikenerone <https://github.com/mikenerone>`_
