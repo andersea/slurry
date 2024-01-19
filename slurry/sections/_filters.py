@@ -29,7 +29,7 @@ class Skip(TrioSection):
         else:
             raise RuntimeError('No input provided.')
 
-        async with aclosing(source) as aiter:
+        async with aclosing(source.__aiter__()) as aiter:
             try:
                 for _ in range(self.count):
                     await aiter.__anext__()
