@@ -2,7 +2,7 @@ import pytest
 import trio
 
 from slurry import Pipeline
-from slurry.sections import Repeat, Metronome, InsertValue
+from slurry.sections import Repeat, Metronome, InsertValue, _producers
 
 from .fixtures import produce_alphabet
 
@@ -51,32 +51,27 @@ async def test_repeat_input(autojump_clock):
                 break
     assert results == [('a', 1), ('a', 2), ('b', 2.5), ('b', 3.5), ('c', 4)]
 
-async def test_metronome():
+async def test_metronome(autojump_clock, monkeypatch):
+    monkeypatch.setattr(_producers, "time", trio.current_time)
     async with Pipeline.create(
-        produce_alphabet(5, max=3),
+        produce_alphabet(5, max=6, delay=1),
         Metronome(5)
     ) as pipeline, pipeline.tap() as aiter:
         results = []
-        start_time = trio.current_time()
         async for item in aiter:
-            results.append((item, trio.current_time() - start_time))
-            if len(results) == 2:
-                break
-    assert [x[0] for x in results] == ['a', 'b']
-    assert 5 - results[1][1] + results[0][1] < 0.1
+            results.append((item, trio.current_time()))
+    assert results == [(letter, 5.0 * (i + 1)) for i, letter in enumerate("abcde")]
 
-async def test_metronome_no_input():
+async def test_metronome_no_input(autojump_clock, monkeypatch):
+    monkeypatch.setattr(_producers, "time", trio.current_time)
     async with Pipeline.create(
         Metronome(5, "a")
     ) as pipeline, pipeline.tap() as aiter:
         results = []
-        start_time = trio.current_time()
-        async for item in aiter:
-            results.append((item, trio.current_time() - start_time))
-            if len(results) == 2:
-                break
-    assert [x[0] for x in results] == ['a', 'a']
-    assert 5 - results[1][1] + results[0][1] < 0.1
+        for _ in range(5):
+            item = await aiter.__anext__()
+            results.append((item, trio.current_time()))
+    assert results == [("a", 5.0 * (i + 1)) for i in range(5)]
 
 async def test_insert_value(autojump_clock):
     async with Pipeline.create(
