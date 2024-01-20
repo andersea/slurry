@@ -65,6 +65,19 @@ async def test_metronome():
     assert [x[0] for x in results] == ['a', 'b']
     assert 5 - results[1][1] + results[0][1] < 0.1
 
+async def test_metronome_no_input():
+    async with Pipeline.create(
+        Metronome(5, "a")
+    ) as pipeline, pipeline.tap() as aiter:
+        results = []
+        start_time = trio.current_time()
+        async for item in aiter:
+            results.append((item, trio.current_time() - start_time))
+            if len(results) == 2:
+                break
+    assert [x[0] for x in results] == ['a', 'a']
+    assert 5 - results[1][1] + results[0][1] < 0.1
+
 async def test_insert_value(autojump_clock):
     async with Pipeline.create(
         produce_alphabet(1, max=3, delay=1),
