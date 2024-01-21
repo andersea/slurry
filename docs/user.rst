@@ -77,7 +77,7 @@ Each section is executed as a
 and, from the user perspective, are in principle completely non-blocking and independent of each other.  
 
 Slurry includes a library of ready made sections, with functionality inspired by other reactive frameworks. They
-are documented below. For more information about sections, and how to build your own sections, read the :ref:`Developer Guide`.
+are documented below. For more information about sections, and how to build your own sections, read the :doc:`dev`.
 
 Most ready made sections support an optional source parameter. In most cases this is semantically identical to using that source
 as an async interable input to the pipeline, however using the source parameter instead, may sometimes be more readable.
