@@ -119,6 +119,8 @@ class InsertValue(TrioSection):
     """Inserts a single user supplied value into the pipeline on startup and then
     passes through any further received items unmodified.
 
+    If no input is used, the single value will be sent, and InsertValue will close.
+
     :param value: Item to send on startup.
     :type value: Any
     """
@@ -127,5 +129,6 @@ class InsertValue(TrioSection):
 
     async def refine(self, input, output):
         await output(self.value)
-        async for item in input:
-            await output(item)
+        if input:
+            async for item in input:
+                await output(item)
