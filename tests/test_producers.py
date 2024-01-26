@@ -84,7 +84,7 @@ async def test_insert_value(autojump_clock):
 
 async def test_insert_value_no_input(autojump_clock):
     async with Pipeline.create(
-            InsertValue('n')
+        InsertValue('n')
     ) as pipeline, pipeline.tap() as aiter:
         results = [v async for v in aiter]
         assert results == ['n']
