@@ -2,11 +2,15 @@
 
 ## v1.3.2
 
+A lot of quality of life improvements, curtesy of Mike Nerone [@mikenerone](https://github.com/mikenerone).
+
 * Add support for python 3.11 and 3.12
 * Updated dependencies
 * Various build fixes for github actions and readthedocs
 * Improved typings across the board
 * Fix unsafe use of iterables
+* Metronome test speedup with timer mocking
+* Allow InsertValue to be used as first section.
 
 ## v1.3.1
 
