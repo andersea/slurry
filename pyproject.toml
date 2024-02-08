@@ -23,7 +23,6 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-async-generator = "^1.10"
 python = "^3.8"
 trio = ">=0.23.0"
 
