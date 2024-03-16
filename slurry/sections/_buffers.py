@@ -4,9 +4,9 @@ import math
 from typing import Any, AsyncIterable, Callable, Optional, Sequence
 
 import trio
-from async_generator import aclosing
 
 from ..environments import TrioSection
+from .._utils import safe_aclosing
 
 class Window(TrioSection):
     """Window buffer with size and age limits.
@@ -51,7 +51,7 @@ class Window(TrioSection):
 
         buf = deque()
 
-        async with aclosing(source) as aiter:
+        async with safe_aclosing(source) as aiter:
             async for item in aiter:
                 now = trio.current_time()
                 buf.append((item, now))
@@ -111,7 +111,7 @@ class Group(TrioSection):
 
             send_channel, receive_channel = trio.open_memory_channel(0)
             async def pull_task():
-                async with send_channel, aclosing(source) as aiter:
+                async with send_channel, safe_aclosing(source) as aiter:
                     async for item in aiter:
                         await send_channel.send(item)
             nursery.start_soon(pull_task)
@@ -169,7 +169,7 @@ class Delay(TrioSection):
         buffer_input_channel, buffer_output_channel = trio.open_memory_channel(math.inf)
 
         async def pull_task():
-            async with buffer_input_channel, aclosing(source) as aiter:
+            async with buffer_input_channel, safe_aclosing(source) as aiter:
                 async for item in aiter:
                     await buffer_input_channel.send((item, trio.current_time() + self.interval))
 

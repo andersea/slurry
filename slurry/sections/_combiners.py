@@ -3,11 +3,11 @@ import builtins
 import itertools
 
 import trio
-from async_generator import aclosing
 
 from ..environments import TrioSection
 from .abc import PipelineSection
 from .weld import weld
+from .._utils import safe_aclose, safe_aclosing
 
 class Chain(TrioSection):
     """Chains input from one or more sources. Any valid ``PipelineSection`` is an allowed source.
@@ -41,7 +41,7 @@ class Chain(TrioSection):
             sources = self.sources
         async with trio.open_nursery() as nursery:
             for source in sources:
-                async with aclosing(weld(nursery, source)) as agen:
+                async with safe_aclosing(weld(nursery, source)) as agen:
                     async for item in agen:
                         await output(item)
 
@@ -67,7 +67,7 @@ class Merge(TrioSection):
         async with trio.open_nursery() as nursery:
 
             async def pull_task(source):
-                async with aclosing(weld(nursery, source)) as aiter:
+                async with safe_aclosing(weld(nursery, source)) as aiter:
                     async for item in aiter:
                         await output(item)
 
@@ -126,7 +126,7 @@ class Zip(TrioSection):
                 await output(tuple(result for i, result in sorted(results, key=lambda packet: packet[0])))
 
         for source in sources:
-            await source.aclose()
+            await safe_aclose(source)
 
 class ZipLatest(TrioSection):
     """Zips input from multiple sources and outputs a result on every received item. Any valid
@@ -204,7 +204,7 @@ class ZipLatest(TrioSection):
         async with trio.open_nursery() as nursery:
 
             async def pull_task(index, source, monitor=False):
-                async with aclosing(weld(nursery, source)) as aiter:
+                async with safe_aclosing(weld(nursery, source)) as aiter:
                     async for item in aiter:
                         results[index] = item
                         ready[index] = True

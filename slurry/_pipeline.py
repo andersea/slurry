@@ -1,14 +1,15 @@
 """Contains the main Slurry ``Pipeline`` class."""
 
 import math
+from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
 import trio
-from async_generator import aclosing, asynccontextmanager
 
+from .sections.abc import PipelineSection
 from .sections.weld import weld
 from ._tap import Tap
-from .sections.abc import PipelineSection
+from ._utils import safe_aclose, safe_aclosing
 
 class Pipeline:
     """The main Slurry ``Pipeline`` class.
@@ -53,7 +54,7 @@ class Pipeline:
             output = weld(nursery, *self.sections)
 
             # Output to taps
-            async with aclosing(output) as aiter:
+            async with safe_aclosing(output) as aiter:
                 async for item in aiter:
                     self._taps = set(filter(lambda tap: not tap.closed, self._taps))
                     if not self._taps:
@@ -64,7 +65,7 @@ class Pipeline:
 
         # There is no more output to send. Close the taps.
         for tap in self._taps:
-            await tap.send_channel.aclose()
+            await safe_aclose(tap.send_channel)
 
     def tap(self, *,
             max_buffer_size: int = 0,
