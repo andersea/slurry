@@ -5,8 +5,6 @@ from slurry import Pipeline
 from slurry.sections import Map
 from slurry.environments import TrioSection
 
-from .fixtures import AsyncIteratorWithoutAclose
-
 async def test_pipeline_create(autojump_clock):
     async with Pipeline.create(None):
         await trio.sleep(1)
