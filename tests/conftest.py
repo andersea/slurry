@@ -4,7 +4,7 @@ from functools import wraps
 import pytest
 import trio
 
-from slurry._utils import safe_aclose
+from .fixtures import AsyncIteratorWithoutAclose
 
 def fixture_gen_with_and_without_aclose(async_gen):
 
@@ -73,17 +73,3 @@ async def produce_mappings(interval):
         vehicle['number'] = i
         yield vehicle
         await trio.sleep(interval)
-
-class AsyncIteratorWithoutAclose:
-    def __init__(self, source_aiterable):
-        self.source_aiter = source_aiterable.__aiter__()
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        try:
-            return await self.source_aiter.__anext__()
-        except StopAsyncIteration:
-            await safe_aclose(self.source_aiter)
-            raise

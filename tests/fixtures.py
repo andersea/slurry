@@ -4,6 +4,7 @@ import math
 from typing import Any, Callable, Iterable
 
 from slurry.environments import ThreadSection, ProcessSection
+from slurry._utils import safe_aclose
 
 class SyncSquares(ThreadSection):
     def __init__(self, raise_after=math.inf) -> None:
@@ -54,6 +55,5 @@ class AsyncIteratorWithoutAclose:
         try:
             return await self.source_aiter.__anext__()
         except StopAsyncIteration:
-            if hasattr(self.source_aiter, "aclose"):
-                await self.source_aiter.aclose()
+            await safe_aclose(self.source_aiter)
             raise
