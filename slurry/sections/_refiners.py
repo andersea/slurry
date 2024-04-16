@@ -1,9 +1,8 @@
 """Sections for transforming an input into a different output."""
 from typing import Any, AsyncIterable, Optional
 
-from async_generator import aclosing
-
 from ..environments import TrioSection
+from .._utils import safe_aclosing
 
 class Map(TrioSection):
     """Maps over an asynchronous sequence.
@@ -27,6 +26,6 @@ class Map(TrioSection):
         else:
             raise RuntimeError('No input provided.')
 
-        async with aclosing(source) as aiter:
+        async with safe_aclosing(source) as aiter:
             async for item in aiter:
                 await output(self.func(item))

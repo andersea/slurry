@@ -4,8 +4,6 @@ import trio
 from slurry import Pipeline
 from slurry.sections import Repeat, Metronome, InsertValue, _producers
 
-from .fixtures import produce_alphabet
-
 async def test_repeat_valid_args():
     with pytest.raises(RuntimeError):
         async with Pipeline.create(
@@ -38,7 +36,7 @@ async def test_repeat_kwargs(autojump_clock):
                 break
     assert results == [('a', 0), ('a', 1), ('a', 2), ('a', 3), ('a', 4)]
 
-async def test_repeat_input(autojump_clock):
+async def test_repeat_input(produce_alphabet, autojump_clock):
     results = []
     async with Pipeline.create(
         produce_alphabet(1.5, max=3, delay=1),
@@ -51,7 +49,7 @@ async def test_repeat_input(autojump_clock):
                 break
     assert results == [('a', 1), ('a', 2), ('b', 2.5), ('b', 3.5), ('c', 4)]
 
-async def test_metronome(autojump_clock, monkeypatch):
+async def test_metronome(produce_alphabet, autojump_clock, monkeypatch):
     monkeypatch.setattr(_producers, "time", trio.current_time)
     async with Pipeline.create(
         produce_alphabet(5, max=6, delay=1),
@@ -62,7 +60,7 @@ async def test_metronome(autojump_clock, monkeypatch):
             results.append((item, trio.current_time()))
     assert results == [(letter, 5.0 * (i + 1)) for i, letter in enumerate("abcde")]
 
-async def test_metronome_no_input(autojump_clock, monkeypatch):
+async def test_metronome_no_input(produce_alphabet, autojump_clock, monkeypatch):
     monkeypatch.setattr(_producers, "time", trio.current_time)
     async with Pipeline.create(
         Metronome(5, "a")
@@ -73,7 +71,7 @@ async def test_metronome_no_input(autojump_clock, monkeypatch):
             results.append((item, trio.current_time()))
     assert results == [("a", 5.0 * (i + 1)) for i in range(5)]
 
-async def test_insert_value(autojump_clock):
+async def test_insert_value(produce_alphabet, autojump_clock):
     async with Pipeline.create(
         produce_alphabet(1, max=3, delay=1),
         InsertValue('n')

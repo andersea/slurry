@@ -1,10 +1,10 @@
 """Pipeline sections that filters the incoming items."""
 from typing import Any, AsyncIterable, Callable, Hashable, Optional, Union
 
-from async_generator import aclosing
 import trio
 
 from ..environments import TrioSection
+from .._utils import safe_aclosing
 
 class Skip(TrioSection):
     """Skips the first ``count`` items in an asynchronous sequence.
@@ -29,7 +29,7 @@ class Skip(TrioSection):
         else:
             raise RuntimeError('No input provided.')
 
-        async with aclosing(source.__aiter__()) as aiter:
+        async with safe_aclosing(source) as aiter:
             try:
                 for _ in range(self.count):
                     await aiter.__anext__()
@@ -64,7 +64,7 @@ class SkipWhile(TrioSection):
         else:
             raise RuntimeError('No input provided.')
 
-        async with aclosing(source) as aiter:
+        async with safe_aclosing(source) as aiter:
             async for item in aiter:
                 if not self.pred(item):
                     await output(item)
@@ -98,7 +98,7 @@ class Filter(TrioSection):
         else:
             raise RuntimeError('No input provided.')
 
-        async with aclosing(source) as aiter:
+        async with safe_aclosing(source) as aiter:
             async for item in aiter:
                 if self.func(item):
                     await output(item)
@@ -133,7 +133,7 @@ class Changes(TrioSection):
 
         token = object()
         last = token
-        async with aclosing(source) as aiter:
+        async with safe_aclosing(source) as aiter:
             async for item in aiter:
                 if last is token or item != last:
                     last = item
@@ -185,7 +185,7 @@ class RateLimit(TrioSection):
             get_subject = lambda item: item[self.subject]
 
         timestamps = {}
-        async with aclosing(source) as aiter:
+        async with safe_aclosing(source) as aiter:
             async for item in aiter:
                 now = trio.current_time()
                 subject = get_subject(item)
